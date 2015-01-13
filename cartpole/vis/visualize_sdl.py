@@ -2,10 +2,6 @@
 import pygame
 import math
 
-SCREEN_WIDTH=1024
-SCREEN_HEIGHT=768
-
-
 class visualize_sdl(object):
     def init_vis(self,display_width,display_height,axis_x_min,axis_x_max,axis_y_min,axis_y_max,fps):
         pygame.init()
@@ -13,6 +9,8 @@ class visualize_sdl(object):
         pygame.display.set_caption("Cart Pole Display")
 
         self.axis = [axis_x_min,axis_x_max,axis_y_min,axis_y_max]
+        self.display_width = display_width
+        self.display_height = display_height
 
         pygame.display.flip()
         self.clock = pygame.time.Clock()
@@ -56,8 +54,8 @@ class visualize_sdl(object):
     #convert x,y coords from the axis scale to screen coordinates
     def convert_coords(self,coords):
         img_coords = [0,0]
-        img_width = SCREEN_WIDTH
-        img_height = SCREEN_HEIGHT
+        img_width = self.display_width
+        img_height = self.display_height
         img_coords[0] = float(((coords[0] - self.axis[0])/float(self.axis[1] - self.axis[0]))*float(img_width))
         img_coords[1] = float(((coords[1] - self.axis[2])/float(self.axis[3] - self.axis[2]))*float(img_height))
         return tuple(img_coords);
@@ -65,8 +63,8 @@ class visualize_sdl(object):
     #convert x,y,width,height coords from the axis scale to screen coordinates
     def convert_rect_coords(self,coords):
         img_coords = [0,0,0,0]
-        img_width = SCREEN_WIDTH
-        img_height = SCREEN_HEIGHT
+        img_width = self.display_width
+        img_height = self.display_height
         img_coords[0] = float(((coords[0] - self.axis[0])/float(self.axis[1] - self.axis[0]))*float(img_width))
         img_coords[1] = float(((coords[1] - self.axis[2])/float(self.axis[3] - self.axis[2]))*float(img_height))
         img_coords[2] = float(((coords[2])/float(self.axis[1] - self.axis[0]))*float(img_width))

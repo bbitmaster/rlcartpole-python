@@ -20,7 +20,7 @@ class cartpole_environment(object):
 
     #TODO: generate random state
     def reset_state(self):
-        self.sim.init_state(2.0,0.0,0.0,0.0)
+        self.sim.init_state(np.random.random()*2*pi,(np.random.random() - 0.5)*self.angle_vel_bound/2.0,0.0,(np.random.random() - 0.5)*self.vel_bound/2.0)
 
     def set_action(self,u):
         self.sim.u = u

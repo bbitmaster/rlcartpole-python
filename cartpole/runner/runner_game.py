@@ -3,10 +3,11 @@ import pygame
 from cartpole.sim.cartpole_sim import cartpole_sim
 from cartpole.env.cartpole_environment import cartpole_environment
 from cartpole.vis.visualize_sdl import visualize_sdl
-
+from cartpole.misc.clear import clear
+import sys
 
 import math
-import curses
+#import curses
 
 class runner_game(object):
     #TODO: Parameters for displaying to screen, and printout, and etc
@@ -19,8 +20,8 @@ class runner_game(object):
         push_force = p['push_force']
 
         while 1:
-            curses.initscr()
             if(p.has_key('print_state_debug')):
+                clear()
                 print(str(sim.sim.state))
             v.delay_vis()
             k = v.get_keys()

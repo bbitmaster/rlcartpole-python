@@ -1,3 +1,4 @@
+from math import exp, log
 #cartpole_default_params
 runtype='game'
 
@@ -7,9 +8,15 @@ simname = 'cartpole_sarsa_test'
 version = '1.1'
 results_dir = '../results/'
 
+#if load_name is set, then the simulation will load this file and resume from there, this is useful for watching the behavior of a trained agent
+#load_name = '../results/cartpole_sarsa_test1.1.h5py'
+
 data_dir = '../data/'
 
-save_interval = 30*60
+save_interval = 1*60
+
+#run for a total number of episodes
+train_episodes=10000
 
 use_float32=True
 
@@ -44,9 +51,11 @@ negative_reward = -10.0
 positive_reward = 0.1
 no_reward = 0.0
 
-epsilon=0.10
-gamma=0.8
-alpha=0.4
+epsilon=0.1
+epsilon_min=0.001
+epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
+gamma=0.95
+alpha=0.3
 
 #If defined, will print the state variables on every frame
 print_state_debug=True
@@ -55,13 +64,14 @@ print_state_debug=True
 do_vis=True
 
 #in sarsa mode, this tells how often to display, -1 for none
-showevery=300
+showevery=500
 
 #these affect the display. They tell the size in pixels of the display, the axis size, and how many frames to skip
-display_width=1024
-display_height=768
-axis_x_min=-20
-axis_x_max=20
-axis_y_min=-20
-axis_y_max=20
+display_width=1280
+display_height=720
+axis_x_min=-10.0
+axis_x_max=10.0
+axis_y_min=-5.5
+axis_y_max=5.5
 fps=60
+

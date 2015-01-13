@@ -11,7 +11,7 @@ class tabular_qsa(object):
         self.size = np.append(np.array(size),num_actions)
         self.max_index = np.floor(self.size - 1)
         self.min_index = np.zeros(self.size.shape)
-        self.data = -np.random.random(self.size)/10.0
+        self.data = -np.random.random(self.size)/100.0
 
     def store(self,state,action,value):
         s = (np.array(state) - self.mins)/(self.maxs - self.mins)
