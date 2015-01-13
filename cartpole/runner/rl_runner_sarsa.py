@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-import pygame
 import numpy as np
 from cartpole.sim.cartpole_sim import cartpole_sim
-from cartpole.vis.visualize_sdl import visualize_sdl
 from cartpole.state.tabular_qsa import tabular_qsa
 from cartpole.env.cartpole_environment import cartpole_environment
 
@@ -37,6 +35,8 @@ class rl_runner_sarsa(object):
         push_force = p['push_force']
 
         if(self.do_vis):
+            #only import if we need it, since we don't want to require installation of pygame
+            from cartpole.vis.visualize_sdl import visualize_sdl
             v = visualize_sdl()
             v.init_vis(p['display_width'],p['display_height'],p['axis_x_min'],p['axis_x_max'],p['axis_y_min'],p['axis_y_max'],p['fps'])
         episode = 0

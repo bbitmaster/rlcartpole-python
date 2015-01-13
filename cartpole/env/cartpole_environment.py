@@ -2,7 +2,6 @@
 import numpy as np
 #import matplotlib.pyplot as plt
 import sys
-from matplotlib.mlab import rk4
 from scipy import integrate
 from math import sin, cos, pi
 from cartpole.sim.cartpole_sim import cartpole_sim

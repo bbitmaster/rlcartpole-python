@@ -2,7 +2,6 @@
 import sys
 from cartpole.sim.cartpole_sim import cartpole_sim
 from cartpole.env.cartpole_environment import cartpole_environment
-from cartpole.runner.runner_game import runner_game
 from cartpole.runner.rl_runner_sarsa import rl_runner_sarsa
 from cartpole.misc.autoconvert import autoconvert
 
@@ -32,6 +31,8 @@ def main(argv=[]):
 
     #the runtype tells exactly what type of simulation we want to run
     if(p['runtype'].lower() == "game"):
+        #only import if we need it, since it links to pygame and we don't want to require it to be installed
+        from cartpole.runner.runner_game import runner_game
         run = runner_game()
         run.run_sim(p)
 
