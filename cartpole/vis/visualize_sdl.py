@@ -5,19 +5,19 @@ import math
 SCREEN_WIDTH=1024
 SCREEN_HEIGHT=768
 
-AXIS = [-20,20,-20,20]
-
 
 class visualize_sdl(object):
-    def init_vis(self):
+    def init_vis(self,display_width,display_height,axis_x_min,axis_x_max,axis_y_min,axis_y_max,fps):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((display_width,display_height))
         pygame.display.set_caption("Cart Pole Display")
 
+        self.axis = [axis_x_min,axis_x_max,axis_y_min,axis_y_max]
+
         pygame.display.flip()
-#        self.cp_sim = cartpole_sim()
         self.clock = pygame.time.Clock()
-        self.delay = 60
+        self.delay = fps
+
     #call this every iteration to slow down to real time
     def delay_vis(self):
         self.clock.tick(self.delay)
@@ -55,7 +55,6 @@ class visualize_sdl(object):
 
     #convert x,y coords from the axis scale to screen coordinates
     def convert_coords(self,coords):
-        self.axis = AXIS
         img_coords = [0,0]
         img_width = SCREEN_WIDTH
         img_height = SCREEN_HEIGHT
@@ -65,7 +64,6 @@ class visualize_sdl(object):
 
     #convert x,y,width,height coords from the axis scale to screen coordinates
     def convert_rect_coords(self,coords):
-        self.axis = AXIS
         img_coords = [0,0,0,0]
         img_width = SCREEN_WIDTH
         img_height = SCREEN_HEIGHT

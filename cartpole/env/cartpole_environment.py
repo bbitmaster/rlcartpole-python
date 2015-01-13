@@ -8,16 +8,16 @@ from math import sin, cos, pi
 from cartpole.sim.cartpole_sim import cartpole_sim
 
 class cartpole_environment(object):
-    def init(self,vel_bound,angle_vel_bound,pos_bound,g=9.81,l=0.5,mp=0.01,mc=1.0,dt=0.02):
+    def init(self,vel_bound,angle_vel_bound,pos_bound,g=9.81,l=0.5,mp=0.01,mc=1.0,dt=0.02,negative_reward=-10.0,positive_reward=0.1,no_reward=0.0):
         self.sim = cartpole_sim(g,l,mp,mc,dt)
         self.vel_bound = vel_bound
         self.angle_vel_bound = angle_vel_bound
         self.pos_bound = pos_bound
         self.is_terminal = False
 
-        self.negative_reward = -10.0
-        self.positive_reward = 0.1
-        self.no_reward = 0.0
+        self.negative_reward = negative_reward
+        self.positive_reward = positive_reward
+        self.no_reward = no_reward
 
     #TODO: generate random state
     def reset_state(self):
