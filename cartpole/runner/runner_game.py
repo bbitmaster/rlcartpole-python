@@ -27,9 +27,12 @@ class runner_game(object):
             k = v.get_keys()
 
             u = 0.0;
+            action = 0
             if(k[0]):
+                action = 2
                 u = -push_force;
             if(k[1]):
+                action = 1
                 u = push_force;
             sim.set_action(u)
             sim.step()
@@ -39,8 +42,8 @@ class runner_game(object):
             #    sim.state[2] = 4.0
             if(sim.is_terminal):
                 sim.reset_state()
-                
-            v.draw_cartpole(sim.get_state(),sim.get_reward())
+
+            v.draw_cartpole(sim.get_state(),action,sim.get_reward())
             exit = v.update_vis()
             if(exit):
                 break

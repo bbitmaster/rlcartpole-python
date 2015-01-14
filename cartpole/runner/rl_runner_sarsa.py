@@ -30,9 +30,12 @@ class rl_runner_sarsa(object):
             p['g'],p['l'],p['mp'],p['mc'],p['dt'],p['negative_reward'],p['positive_reward'],p['no_reward'])
 
         self.do_vis = p['do_vis']
+        self.save_images = p.get('save_images',False)
+        self.image_save_dir = p.get('image_save_dir',None)
         save_interval = p['save_interval']
 
         self.showevery = p['showevery']
+        self.fastforwardskip = 5
         push_force = p['push_force']
 
 
@@ -50,16 +53,16 @@ class rl_runner_sarsa(object):
         avg_step_duration = 1.0
 
         ##repeat for each episode
-        r_sum_avg = 0.0
+        self.r_sum_avg = -10.0
         while 1:
-            step = 0 
+            self.step = 0 
             ##initialize s
             self.sim.reset_state()
-            s = self.sim.get_state()
+            self.s = self.sim.get_state()
             #choose a from s using policy derived from Q
-            a = self.choose_action(s);
+            self.a = self.choose_action(self.s);
 
-            r_sum = 0.0
+            self.r_sum = 0.0
             #repeat steps
             quit = False
             save_and_exit = False
@@ -67,29 +70,39 @@ class rl_runner_sarsa(object):
             while 1:
                 ##take action a, observe r, s'
                 a_vel = [0.0,-push_force,push_force]
-                self.sim.set_action(a_vel[a])
+                self.sim.set_action(a_vel[self.a])
 
                 self.sim.step()
                 #print("Terminal: " + str(self.sim.is_terminal))
-                r = self.sim.get_reward()
-                s_prime = self.sim.get_state()
-                r_sum += r
+                self.r = self.sim.get_reward()
+                self.s_prime = self.sim.get_state()
+                self.r_sum += self.r
 
                 #choose a' from s' using policy derived from Q
-                a_prime = self.choose_action(s_prime)
+                self.a_prime = self.choose_action(self.s_prime)
                 
                 #Q(s,a) <- Q(s,a) + alpha[r + gamma*Q(s_prime,a_prime) - Q(s,a)]
-                qsa_tmp = self.qsa.load(s,a)
-                self.qsa.store(s,a,qsa_tmp +  \
-                    self.alpha*(r + self.gamma*self.qsa.load(s_prime,a_prime) - qsa_tmp))
+                qsa_tmp = self.qsa.load(self.s,self.a)
+                self.qsa.store(self.s,self.a,qsa_tmp +  \
+                    self.alpha*(self.r + self.gamma*self.qsa.load(self.s_prime,self.a_prime) - qsa_tmp))
                 
                 
-                if(self.do_vis and not (self.episode % self.showevery)):
-                    v.delay_vis()
-                    v.draw_cartpole(self.sim.get_state(),self.sim.get_reward())
-                    exit = v.update_vis()
-                    if(exit):
-                        quit=True
+                if(self.do_vis):
+                    if not (self.episode % self.showevery):
+                        self.fast_forward = False
+                        v.delay_vis()
+                        v.draw_cartpole(self.sim.get_state(),self.a,self.sim.get_reward(),self)
+                        exit = v.update_vis()
+                        if(exit):
+                            quit=True
+                    elif(self.step == 0 and not (self.episode % self.fastforwardskip)):
+                        self.fast_forward = True
+                        v.delay_vis()
+                        v.draw_cartpole(self.sim.get_state(),self.a,self.sim.get_reward(),self)
+                        exit = v.update_vis()
+                        if(exit):
+                            quit=True
+                        
                     #if(p.has_key('print_state_debug') and p['print_state_debug'] == True):
                     #    print("action: " + str(a) + " r: " + str(r) + \
                     #        " Qsa: " + str(self.qsa.load(s,a)) +  " state: " + str(s))
@@ -102,7 +115,7 @@ class rl_runner_sarsa(object):
                     clear()
                     print("Simname: " + str(p['simname']))
                     print("Episodes Elapsed: " + str(self.episode))
-                    print("Average Reward Per Episode: " + str(r_sum_avg))
+                    print("Average Reward Per Episode: " + str(self.r_sum_avg))
                     print("Epsilon: " + str(self.epsilon))
                     print("Average Steps Per Second: " + str(1.0/avg_step_duration))
                     m, s = divmod(time.time() - start_time, 60)
@@ -118,17 +131,17 @@ class rl_runner_sarsa(object):
                     break
                 if(self.sim.is_terminal):
                     break
-                if(step > 3000):
+                if(self.step > 3000):
                     break
                 ## s <- s';  a <-- a'
-                s = s_prime
-                a = a_prime
+                self.s = self.s_prime
+                self.a = self.a_prime
 
-                step += 1
+                self.step += 1
                 avg_step_duration = 0.999*avg_step_duration + 0.001*(time.time() - step_duration_timer)
                 step_duration_timer = time.time()
                 #end step loop
-            r_sum_avg = 0.9999*r_sum_avg + 0.0001*r_sum
+            self.r_sum_avg = 0.9999*self.r_sum_avg + 0.0001*self.r_sum
             
             if(p.has_key('epsilon_decay')):
                 self.epsilon = self.epsilon * p['epsilon_decay']

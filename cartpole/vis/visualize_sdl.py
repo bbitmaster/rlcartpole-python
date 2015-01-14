@@ -15,6 +15,7 @@ class visualize_sdl(object):
         pygame.display.flip()
         self.clock = pygame.time.Clock()
         self.delay = fps
+        self.framenum = 0
 
     #call this every iteration to slow down to real time
     def delay_vis(self):
@@ -72,7 +73,7 @@ class visualize_sdl(object):
         return tuple(img_coords);
 
     #call this before calling update vis
-    def draw_cartpole(self,state,reward):
+    def draw_cartpole(self,state,action,reward,stats=None):
         #draw cart
         self.screen.fill((0,0,0))
         angle = state[0]
@@ -88,6 +89,87 @@ class visualize_sdl(object):
         pole_coords1 = self.convert_coords((pos,0.0))
         pole_coords2 = self.convert_coords((pos + 4.0*math.sin(angle),-4.0*math.cos(angle)))
         pygame.draw.line(self.screen,(24,24,192),pole_coords1,pole_coords2,4)
+
+        #Draw arrow from action
+        #"-" and "/" and "\" strokes makes "->"
+        if(action == 1):
+            # "-" stroke of arrow
+            arrow_coords1 = self.convert_coords((pos+0.25,0.0))
+            arrow_coords2 = self.convert_coords((pos+0.75,0.0))
+            pygame.draw.line(self.screen,(224,224,224),arrow_coords1,arrow_coords2,1)
+
+            # "\" stroke of arrow
+            arrow_coords1 = self.convert_coords((pos+0.75,0.0))
+            arrow_coords2 = self.convert_coords((pos+0.50,-0.25))
+            pygame.draw.line(self.screen,(224,224,224),arrow_coords1,arrow_coords2,1)
+
+            # "/" stroke of arrow
+            arrow_coords1 = self.convert_coords((pos+0.75,0.0))
+            arrow_coords2 = self.convert_coords((pos+0.50,+0.25))
+            pygame.draw.line(self.screen,(224,224,224),arrow_coords1,arrow_coords2,1)
+
+        if(action == 2):
+            # "-" stroke of arrow
+            arrow_coords1 = self.convert_coords((pos-0.25,0.0))
+            arrow_coords2 = self.convert_coords((pos-0.75,0.0))
+            pygame.draw.line(self.screen,(224,224,224),arrow_coords1,arrow_coords2,1)
+
+            # "\" stroke of arrow
+            arrow_coords1 = self.convert_coords((pos-0.75,0.0))
+            arrow_coords2 = self.convert_coords((pos-0.50,-0.25))
+            pygame.draw.line(self.screen,(224,224,224),arrow_coords1,arrow_coords2,1)
+
+            # "/" stroke of arrow
+            arrow_coords1 = self.convert_coords((pos-0.75,0.0))
+            arrow_coords2 = self.convert_coords((pos-0.50,+0.25))
+            pygame.draw.line(self.screen,(224,224,224),arrow_coords1,arrow_coords2,1)
+        if(stats is not None):    
+            line_pos=30
+            font = pygame.font.SysFont("Ubuntu Mono",20)
+            height = font.get_height()*1.2
+
+            text = font.render(("Episode: " + str(stats.episode)),1,(255,255,255))
+            self.screen.blit(text,(30,line_pos))
+
+            line_pos += height
+            text = font.render(("Step: " + str(stats.step)),1,(255,255,255))
+            self.screen.blit(text,(30,line_pos))
+
+            line_pos += height
+            text = font.render(("Reward: " + str(stats.r)),1,(255,255,255))
+            self.screen.blit(text,(30,line_pos))
+
+            line_pos += height
+            text = font.render(("Total Reward This Episode: " + str(stats.r_sum)),1,(255,255,255))
+            self.screen.blit(text,(30,line_pos))
+
+            line_pos += height
+            text = font.render(("Average Reward Per Episode: " + str(stats.r_sum_avg)),1,(255,255,255))
+            self.screen.blit(text,(30,line_pos))
+            
+            line_pos += height
+            text = font.render(("Current Epsilon: " + str(stats.epsilon)),1,(255,255,255))
+            self.screen.blit(text,(30,line_pos))
+
+            line_pos += height
+            text = font.render(("Current Gamma: " + str(stats.gamma)),1,(255,255,255))
+            self.screen.blit(text,(30,line_pos))
+
+            line_pos += height
+            text = font.render(("Current Alpha: " + str(stats.alpha)),1,(255,255,255))
+            self.screen.blit(text,(30,line_pos))
+        if(stats.fast_forward):
+            line_pos=30
+            font = pygame.font.SysFont("Ubuntu",100)
+
+            text = font.render(("FAST FORWARD"),1,(128,255,255))
+            self.screen.blit(text,(300,300))
+
+        if(stats.save_images):
+            pygame.image.save(self.screen,stats.image_save_dir + "frame_" + str(self.framenum) + ".png")
+            self.framenum = self.framenum + 1
+
+            
         pygame.display.flip()
 
 

@@ -22,6 +22,9 @@ use_float32=True
 
 random_seed = 4;
 
+save_images=True
+image_save_dir="/home/ben/tmp2/" #I Guess that underutilized windows partitition with all that storage is good for something...
+
 
 #how far to bound each state variable before the simulation is considered invalid
 vel_bound = 15;
@@ -54,8 +57,8 @@ no_reward = 0.0
 epsilon=0.05
 epsilon_min=0.007
 epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
-gamma=0.95
-alpha=0.3
+gamma=0.99
+alpha=0.4
 
 #If defined, will print the state variables on every frame
 print_state_debug=True
