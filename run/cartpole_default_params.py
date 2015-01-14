@@ -51,8 +51,8 @@ negative_reward = -10.0
 positive_reward = 0.1
 no_reward = 0.0
 
-epsilon=0.1
-epsilon_min=0.001
+epsilon=0.05
+epsilon_min=0.007
 epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
 gamma=0.95
 alpha=0.3
