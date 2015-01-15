@@ -23,7 +23,7 @@ use_float32=True
 random_seed = 4;
 
 save_images=True
-image_save_dir="/home/ben/tmp2/" #I Guess that underutilized windows partitition with all that storage is good for something...
+image_save_dir="/home/bgoodric/tmp2/" #I Guess that underutilized windows partitition with all that storage is good for something...
 
 
 #how far to bound each state variable before the simulation is considered invalid
