@@ -2,6 +2,7 @@
 import numpy as np
 from cartpole.sim.cartpole_sim import cartpole_sim
 from cartpole.state.tabular_qsa import tabular_qsa
+from cartpole.state.nnet_qsa import nnet_qsa
 from cartpole.env.cartpole_environment import cartpole_environment
 from cartpole.misc.clear import clear
 import time
@@ -16,10 +17,9 @@ class rl_runner_sarsa(object):
         #initialize hyperparameters fresh, unless we are resuming a saved simulation
         #in which case, we load the parameters
         if(not p.has_key('load_name')):
-            self.init_hyperparameters(p)
+            self.init_sim(p)
         else:
-            self.load_hyperparameters(p)
-
+            self.load_sim(p)
 
         #initialize environment
         self.sim = cartpole_environment()
@@ -38,7 +38,6 @@ class rl_runner_sarsa(object):
         self.fastforwardskip = 5
         push_force = p['push_force']
 
-
         if(self.do_vis):
             #only import if we need it, since we don't want to require installation of pygame
             from cartpole.vis.visualize_sdl import visualize_sdl
@@ -53,14 +52,14 @@ class rl_runner_sarsa(object):
         avg_step_duration = 1.0
 
         ##repeat for each episode
-        self.r_sum_avg = -10.0
+        self.r_sum_avg = -9.5
         while 1:
             self.step = 0 
             ##initialize s
             self.sim.reset_state()
             self.s = self.sim.get_state()
             #choose a from s using policy derived from Q
-            self.a = self.choose_action(self.s);
+            (self.a,self.qsa_tmp) = self.choose_action(self.s);
 
             self.r_sum = 0.0
             #repeat steps
@@ -79,12 +78,13 @@ class rl_runner_sarsa(object):
                 self.r_sum += self.r
 
                 #choose a' from s' using policy derived from Q
-                self.a_prime = self.choose_action(self.s_prime)
+                (self.a_prime,self.qsa_prime) = self.choose_action(self.s_prime)
                 
                 #Q(s,a) <- Q(s,a) + alpha[r + gamma*Q(s_prime,a_prime) - Q(s,a)]
-                qsa_tmp = self.qsa.load(self.s,self.a)
-                self.qsa.store(self.s,self.a,qsa_tmp +  \
-                    self.alpha*(self.r + self.gamma*self.qsa.load(self.s_prime,self.a_prime) - qsa_tmp))
+                #todo: qsa_prime can be saved and reused for qsa_tmp
+                #qsa_tmp = self.qsa.load(self.s,self.a)
+                self.qsa.store(self.s,self.a,self.qsa_tmp +  \
+                    self.alpha*(self.r + self.gamma*self.qsa.load(self.s_prime,self.a_prime) - self.qsa_tmp))
                 
                 
                 if(self.do_vis):
@@ -136,6 +136,7 @@ class rl_runner_sarsa(object):
                 ## s <- s';  a <-- a'
                 self.s = self.s_prime
                 self.a = self.a_prime
+                self.qsa_tmp = self.qsa_prime
 
                 self.step += 1
                 avg_step_duration = 0.999*avg_step_duration + 0.001*(time.time() - step_duration_timer)
@@ -164,19 +165,22 @@ class rl_runner_sarsa(object):
         max_action = -1e99
 
         #epsilon-greedy
+        qsa_list = [self.qsa.load(state,i) for i in range(self.num_actions)]
         if(np.random.random() < self.epsilon):
             a = np.random.randint(self.num_actions)
         else:
-            a = np.argmax(np.array([self.qsa.load(state,i) for i in range(self.num_actions)]))
+            a = np.argmax(np.array(qsa_list))
 
-        return a
+        return (a,qsa_list[a])
 
     def save_results(self,filename,p):
         f_handle = h5py.File(filename,'w')
-        f_handle['qsa_values'] = np.array(self.qsa.data);
+        #TODO: save neural network weights
+        if(p['qsa_type'] == 'tabular'):
+            f_handle['qsa_values'] = np.array(self.qsa.data);
+            f_handle['state_size'] = np.array(self.state_size);
         f_handle['state_min'] = np.array(self.state_min);
         f_handle['state_max'] = np.array(self.state_max);
-        f_handle['state_size'] = np.array(self.state_size);
         f_handle['num_actions'] = np.array(self.num_actions);
         f_handle['epsilon'] = np.array(self.epsilon)
         f_handle['epsilon_decay'] = np.array(self.epsilon_decay)
@@ -194,7 +198,7 @@ class rl_runner_sarsa(object):
                 p_group[param[0]] = param[1];
         f_handle.close();
 
-    def load_hyperparameters(self,p):
+    def load_sim(self,p):
         f_handle = h5py.File(p['load_name'],'r')
         self.epsilon = f_handle['epsilon'].value
         self.epsilon_decay = f_handle['epsilon_decay'].value
@@ -212,7 +216,7 @@ class rl_runner_sarsa(object):
         print('loaded epsilon: ' + str(self.epsilon))
         f_handle.close();
 
-    def init_hyperparameters(self,p):
+    def init_sim(self,p):
         self.epsilon = p['epsilon']
         self.epsilon_decay = p.get('epsilon_decay',1.0)
         self.epsilon_min = p.get('epsilon_min',self.epsilon)
@@ -220,18 +224,22 @@ class rl_runner_sarsa(object):
         self.gamma = p['gamma']
 
         ##initialize Qsa arbitrarily
-        vel_bound = p['vel_bound']
-        pos_bound = p['pos_bound']
-        angle_vel_bound = p['angle_vel_bound']
-        self.state_min = [0.0, -vel_bound, -pos_bound, -angle_vel_bound]
-        self.state_max = [2*math.pi,  vel_bound,  pos_bound,  angle_vel_bound]
+        self.vel_bound = p['vel_bound']
+        self.pos_bound = p['pos_bound']
+        self.angle_vel_bound = p['angle_vel_bound']
+        self.state_min = [0.0, -self.vel_bound, -self.pos_bound, -self.angle_vel_bound]
+        self.state_max = [2*math.pi,  self.vel_bound,  self.pos_bound,  self.angle_vel_bound]
 
-        self.state_size = [p['angle_bins'],p['angle_vel_bins'],p['pos_bins'],p['vel_bins']]
         self.episode = 0
 
         self.num_actions = 3
-        self.qsa = tabular_qsa()
-        self.qsa.init(self.state_min,self.state_max,self.state_size,self.num_actions)
+        if(p['qsa_type'] == 'tabular'):
+            self.qsa = tabular_qsa()
+            self.state_size = [p['angle_bins'],p['angle_vel_bins'],p['pos_bins'],p['vel_bins']]
+            self.qsa.init(self.state_min,self.state_max,self.state_size,self.num_actions)
+        elif(p['qsa_type'] == 'nnet'):
+            self.qsa = nnet_qsa()
+            self.qsa.init(self.state_min,self.state_max,self.num_actions,p)
 
 if __name__ == '__main__':
     g = rl_runner_sarsa()

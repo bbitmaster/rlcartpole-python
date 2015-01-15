@@ -26,18 +26,39 @@ save_images=False
 image_save_dir="/home/bgoodric/tmp2/" #I Guess that underutilized windows partitition with all that storage is good for something...
 
 
-qsa_type='tabular'
 
 #how far to bound each state variable before the simulation is considered invalid
 vel_bound = 15;
 angle_vel_bound = 15;
 pos_bound = 10
 
-#how many bins to use for each parameter with Discrete Qsa storage
-angle_bins=20
-angle_vel_bins=20
-pos_bins=10
-vel_bins=20
+#storage types are 'tabular' and 'nnet'
+qsa_type='nnet'
+
+#for tabular storage we have bins
+#Tell many bins to use for each parameter
+#angle_bins=20
+#angle_vel_bins=20
+#pos_bins=10
+#vel_bins=20
+
+#parameters for neural network qsa
+activation_function='tanh'
+
+num_hidden=16
+learning_rate = 0.01
+momentum=0.0
+maxnorm=None
+dropout=None
+
+initialization_scheme='glorot'
+initialization_scheme_final='glorot'
+
+initialization_constant=1.0
+initialization_constant_final=1.0
+
+incorrect_target = -1.0
+correct_target = 1.0
 
 #cart-pole hyperparemeters
 g=9.81  #gravity
