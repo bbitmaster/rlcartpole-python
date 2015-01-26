@@ -59,7 +59,7 @@ class rl_runner_sarsa(object):
             self.sim.reset_state()
             self.s = self.sim.get_state()
             #choose a from s using policy derived from Q
-            (self.a,self.qsa_tmp) = self.choose_action(self.s);
+            (self.a,self.qsa_tmp) = self.choose_action(self.s,p);
 
             self.r_sum = 0.0
             #repeat steps
@@ -78,7 +78,7 @@ class rl_runner_sarsa(object):
                 self.r_sum += self.r
 
                 #choose a' from s' using policy derived from Q
-                (self.a_prime,self.qsa_prime) = self.choose_action(self.s_prime)
+                (self.a_prime,self.qsa_prime) = self.choose_action(self.s_prime,p)
                 
                 #Q(s,a) <- Q(s,a) + alpha[r + gamma*Q(s_prime,a_prime) - Q(s,a)]
                 #todo: qsa_prime can be saved and reused for qsa_tmp
@@ -117,6 +117,9 @@ class rl_runner_sarsa(object):
                     print("Episodes Elapsed: " + str(self.episode))
                     print("Average Reward Per Episode: " + str(self.r_sum_avg))
                     print("Epsilon: " + str(self.epsilon))
+                    if(p['action_type'] == 'noisy_qsa'):
+                        print("Avverage QSA Standard Deviation: " + str(self.qsa_std_avg))
+                        print("Probability of taking different action: " + str(self.prob_of_different_action))
                     print("Average Steps Per Second: " + str(1.0/avg_step_duration))
                     m, s = divmod(time.time() - start_time, 60)
                     h, m = divmod(m, 60)
@@ -139,14 +142,16 @@ class rl_runner_sarsa(object):
                 self.qsa_tmp = self.qsa_prime
 
                 self.step += 1
-                avg_step_duration = 0.999*avg_step_duration + 0.001*(time.time() - step_duration_timer)
+                avg_step_duration = 0.995*avg_step_duration + (1.0 - 0.995)*(time.time() - step_duration_timer)
                 step_duration_timer = time.time()
                 #end step loop
-            self.r_sum_avg = 0.999*self.r_sum_avg + 0.001*self.r_sum
+            self.r_sum_avg = 0.995*self.r_sum_avg + (1.0 - 0.995)*self.r_sum
             
-            if(p.has_key('epsilon_decay')):
+            if(p['decay_type'] == 'geometric'):
                 self.epsilon = self.epsilon * p['epsilon_decay']
-            if(p.has_key('epsilon_min')):
+                self.epsilon = max(p['epsilon_min'],self.epsilon)
+            elif(p['decay_type'] == 'linear'):
+                self.epsilon = self.epsilon - p['epsilon_decay']
                 self.epsilon = max(p['epsilon_min'],self.epsilon)
 
             #save stuff (TODO: Put this in a save function)
@@ -161,15 +166,32 @@ class rl_runner_sarsa(object):
             #end episode loop
         return
 
-    def choose_action(self,state):
+    def choose_action(self,state,p):
         max_action = -1e99
-
+        
         #epsilon-greedy
-        qsa_list = [self.qsa.load(state,i) for i in range(self.num_actions)]
-        if(np.random.random() < self.epsilon):
-            a = np.random.randint(self.num_actions)
-        else:
+        if(p['action_type'] == 'e_greedy'):
+            qsa_list = [self.qsa.load(state,i) for i in range(self.num_actions)]
+            if(np.random.random() < self.epsilon):
+                a = np.random.randint(self.num_actions)
+            else:
+                a = np.argmax(np.array(qsa_list))
+        elif(p['action_type'] == 'noisy_qsa'):
+            #INIT CODE HERE
+            if(self.step == 0 and self.episode == 0):
+                self.qsa_std_avg = p['qsa_avg_init']
+                self.qsa_avg_alpha = p['qsa_avg_alpha']
+                #this will give a moving average estimate of the probability of selecting a different action
+                #(used for printing only)
+                self.prob_of_different_action = 0.0
+            qsa_list = np.array([self.qsa.load(state,i) for i in range(self.num_actions)])
+            qsa_std = np.std(qsa_list)
+            self.qsa_std_avg = self.qsa_avg_alpha*self.qsa_std_avg + (1.0 - self.qsa_avg_alpha)*qsa_std
+            noise = self.epsilon*self.qsa_std_avg*np.random.rand(self.num_actions)
+            a_before = np.argmax(np.array(qsa_list))
+            qsa_list = qsa_list + noise
             a = np.argmax(np.array(qsa_list))
+            self.prob_of_different_action = 0.999*self.prob_of_different_action + (1.0 - 0.999)*(a != a_before)
 
         return (a,qsa_list[a])
 

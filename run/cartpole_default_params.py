@@ -12,18 +12,17 @@ results_dir = '../results/'
 #load_name = '../results/cartpole_sarsa_test1.1.h5py'
 
 data_dir = '../data/'
-
 save_interval = 1*60
 
 #run for a total number of episodes
-train_episodes=15000
+train_episodes=10000
 
 use_float32=True
 
 random_seed = 4;
 
 save_images=False
-image_save_dir="/home/bgoodric/tmp2/" #I Guess that underutilized windows partitition with all that storage is good for something...
+image_save_dir="/home/ben/tmp/" #I Guess that underutilized windows partitition with all that storage is good for something...
 
 
 qsa_type='tabular'
@@ -56,11 +55,20 @@ negative_reward = -10.0
 positive_reward = 0.1
 no_reward = 0.0
 
-epsilon=0.05
+#decay_type can be 'geometric' or 'linear'
+decay_type='linear'
+epsilon=0.1
 epsilon_min=0.007
-epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
+#epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
+epsilon_decay = (epsilon - epsilon_min)/10000
 gamma=0.99
 alpha=0.4
+
+#action_type='e_greedy'
+
+action_type='noisy_qsa'
+qsa_avg_alpha = 0.99
+qsa_avg_init  = 0.0
 
 #If defined, will print the state variables on every frame
 print_state_debug=True
