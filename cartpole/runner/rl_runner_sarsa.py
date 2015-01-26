@@ -52,7 +52,7 @@ class rl_runner_sarsa(object):
         avg_step_duration = 1.0
 
         ##repeat for each episode
-        self.r_sum_avg = -9.5
+        self.r_sum_avg = -0.95
         while 1:
             self.step = 0 
             ##initialize s
@@ -142,7 +142,7 @@ class rl_runner_sarsa(object):
                 avg_step_duration = 0.999*avg_step_duration + 0.001*(time.time() - step_duration_timer)
                 step_duration_timer = time.time()
                 #end step loop
-            self.r_sum_avg = 0.9999*self.r_sum_avg + 0.0001*self.r_sum
+            self.r_sum_avg = 0.999*self.r_sum_avg + 0.001*self.r_sum
             
             if(p.has_key('epsilon_decay')):
                 self.epsilon = self.epsilon * p['epsilon_decay']

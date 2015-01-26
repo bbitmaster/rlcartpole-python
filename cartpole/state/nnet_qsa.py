@@ -32,6 +32,7 @@ class nnet_qsa(object):
         action_list[0,action] = self.correct_target
         s = np.append(s,action_list)[:,np.newaxis]
         self.net.input = s
+#        print(str(s))
         self.net.feed_forward()
         self.net.error = self.net.output - value
         self.net.back_propagate()

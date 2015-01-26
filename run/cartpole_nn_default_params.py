@@ -16,7 +16,7 @@ data_dir = '../data/'
 save_interval = 1*60
 
 #run for a total number of episodes
-train_episodes=10000
+train_episodes=15000
 
 use_float32=True
 
@@ -43,9 +43,9 @@ qsa_type='nnet'
 #vel_bins=20
 
 #parameters for neural network qsa
-activation_function='tanh'
+activation_function='squash'
 
-num_hidden=16
+num_hidden=128
 learning_rate = 0.01
 momentum=0.0
 maxnorm=None
@@ -73,12 +73,12 @@ dt=0.02
 push_force = 10.0
 
 #reinforcement learning parameters
-negative_reward = -10.0
-positive_reward = 0.1
+negative_reward = -1.0
+positive_reward = 0.01
 no_reward = 0.0
 
-epsilon=0.05
-epsilon_min=0.007
+epsilon=0.10
+epsilon_min=0.01
 epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
 gamma=0.99
 alpha=0.4

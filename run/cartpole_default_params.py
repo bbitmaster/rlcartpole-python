@@ -16,7 +16,7 @@ data_dir = '../data/'
 save_interval = 1*60
 
 #run for a total number of episodes
-train_episodes=10000
+train_episodes=15000
 
 use_float32=True
 
