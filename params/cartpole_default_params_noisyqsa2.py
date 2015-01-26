@@ -24,6 +24,7 @@ random_seed = 4;
 save_images=False
 image_save_dir="/home/ben/tmp/" #I Guess that underutilized windows partitition with all that storage is good for something...
 
+
 qsa_type='tabular'
 
 #how far to bound each state variable before the simulation is considered invalid
@@ -55,11 +56,11 @@ positive_reward = 0.1
 no_reward = 0.0
 
 #decay_type can be 'geometric' or 'linear'
-decay_type='linear'
-epsilon=0.1
+decay_type='geometric'
+epsilon=0.05
 epsilon_min=0.007
-#epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
-epsilon_decay = (epsilon - epsilon_min)/10000
+epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
+#epsilon_decay = (epsilon - epsilon_min)/10000
 gamma=0.99
 alpha=0.4
 

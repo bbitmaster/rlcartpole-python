@@ -61,3 +61,10 @@ if __name__ == '__main__':
     val  = qsa.load(state,0);
     print("state 4.0,3.0,3.0,3.0 action 0: " + str(val))
 
+    val = 2.0
+    val  = [qsa.load(state,i) for i in range(4)]
+    print("state 4.0,3.0,3.0,3.0 action 0: " + str(val))
+    val[0] = 2.0
+    print("state 4.0,3.0,3.0,3.0 action 0: " + str(val))
+    val  = [qsa.load(state,i) for i in range(4)]
+    print("state 4.0,3.0,3.0,3.0 action 0: " + str(val))

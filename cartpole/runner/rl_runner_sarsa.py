@@ -118,9 +118,10 @@ class rl_runner_sarsa(object):
                     print("Average Reward Per Episode: " + str(self.r_sum_avg))
                     print("Epsilon: " + str(self.epsilon))
                     if(p['action_type'] == 'noisy_qsa'):
-                        print("Avverage QSA Standard Deviation: " + str(self.qsa_std_avg))
+                        print("Average QSA Standard Deviation: " + str(self.qsa_std_avg))
                         print("Probability of taking different action: " + str(self.prob_of_different_action))
                     print("Average Steps Per Second: " + str(1.0/avg_step_duration))
+                    print("a_list: " + str(self.tmp_a_list))
                     m, s = divmod(time.time() - start_time, 60)
                     h, m = divmod(m, 60)
                     print "Elapsed Time %d:%02d:%02d" % (h, m, s)
@@ -189,10 +190,10 @@ class rl_runner_sarsa(object):
             self.qsa_std_avg = self.qsa_avg_alpha*self.qsa_std_avg + (1.0 - self.qsa_avg_alpha)*qsa_std
             noise = self.epsilon*self.qsa_std_avg*np.random.rand(self.num_actions)
             a_before = np.argmax(np.array(qsa_list))
-            qsa_list = qsa_list + noise
-            a = np.argmax(np.array(qsa_list))
+            a = np.argmax(np.array(qsa_list + noise))
             self.prob_of_different_action = 0.999*self.prob_of_different_action + (1.0 - 0.999)*(a != a_before)
 
+        self.tmp_a_list = np.copy(np.array(qsa_list))
         return (a,qsa_list[a])
 
     def save_results(self,filename,p):
