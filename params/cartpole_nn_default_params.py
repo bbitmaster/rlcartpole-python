@@ -15,7 +15,8 @@ data_dir = '../data/'
 save_interval = 1*60
 
 #run for a total number of episodes
-train_episodes=15000
+train_episodes=20000
+max_steps=1000
 
 use_float32=True
 
@@ -37,7 +38,10 @@ qsa_type='nnet'
 activation_function='tanh'
 
 num_hidden=64
-learning_rate = 0.01
+learning_rate = 0.004
+learning_rate_decay_type='geometric'
+learning_rate_decay=0.9999
+learning_rate_min=0.0001
 momentum=0.0
 maxnorm=None
 dropout=None
@@ -76,10 +80,8 @@ epsilon_min=0.1
 #epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
 epsilon_decay = (epsilon - epsilon_min)/15000
 gamma=0.99
-alpha=0.4
 
 #action_type='e_greedy'
-
 action_type='noisy_qsa'
 qsa_avg_alpha = 0.99
 qsa_avg_init  = 0.0

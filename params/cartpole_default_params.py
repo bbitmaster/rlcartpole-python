@@ -16,6 +16,7 @@ save_interval = 1*60
 
 #run for a total number of episodes
 train_episodes=10000
+max_steps=3000
 
 use_float32=True
 
@@ -62,7 +63,7 @@ epsilon_min=0.007
 epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
 #epsilon_decay = (epsilon - epsilon_min)/10000
 gamma=0.99
-alpha=0.4
+tabular_learning_rate=0.4
 
 action_type='e_greedy'
 

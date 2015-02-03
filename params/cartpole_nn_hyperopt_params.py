@@ -15,28 +15,46 @@ data_dir = '../data/'
 save_interval = 1*60
 
 #run for a total number of episodes
-train_episodes=10000
+train_episodes=20000
+max_steps=1000
 
 use_float32=True
 
 random_seed = 4;
 
 save_images=False
-image_save_dir="/home/ben/tmp/" #I Guess that underutilized windows partitition with all that storage is good for something...
+image_save_dir="/home/bgoodric/tmp2/" #I Guess that underutilized windows partitition with all that storage is good for something...
 
-
-qsa_type='tabular'
 
 #how far to bound each state variable before the simulation is considered invalid
 vel_bound = 15;
 angle_vel_bound = 15;
 pos_bound = 10
 
-#how many bins to use for each parameter with Discrete Qsa storage
-angle_bins=20
-angle_vel_bins=20
-pos_bins=10
-vel_bins=20
+#storage types are 'tabular' and 'nnet'
+qsa_type='nnet'
+
+#parameters for neural network qsa
+activation_function='tanh'
+
+num_hidden=64
+learning_rate = 0.004
+learning_rate_decay_type='geometric'
+learning_rate_decay=0.9999
+learning_rate_min=0.0001
+momentum=0.0
+maxnorm=None
+dropout=None
+
+initialization_scheme='glorot'
+initialization_scheme_final='glorot'
+
+initialization_constant=1.0
+initialization_constant_final=1.0
+
+#action is encoded using one hot encoding with these as the "hot" and "not hot" targets
+incorrect_target = -1.0
+correct_target = 1.0
 
 #cart-pole hyperparemeters
 g=9.81  #gravity
@@ -51,21 +69,19 @@ dt=0.02
 push_force = 10.0
 
 #reinforcement learning parameters
-negative_reward = -10.0
+negative_reward = -1.0
 positive_reward = 0.1
 no_reward = 0.0
 
 #decay_type can be 'geometric' or 'linear'
-decay_type='geometric'
-epsilon=0.05
-epsilon_min=0.007
-epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
-#epsilon_decay = (epsilon - epsilon_min)/10000
+decay_type='linear'
+epsilon=2.0
+epsilon_min=0.1
+#epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
+epsilon_decay = (epsilon - epsilon_min)/15000
 gamma=0.99
-alpha=0.4
 
 #action_type='e_greedy'
-
 action_type='noisy_qsa'
 qsa_avg_alpha = 0.99
 qsa_avg_init  = 0.0

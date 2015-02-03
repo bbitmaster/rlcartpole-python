@@ -4,7 +4,7 @@ runtype='sarsa'
 
 #A handy name for this run. The data file will be given this name as
 #<resultsdir><simname><version>.h5py
-simname = 'cartpole_sarsa_test'
+simname = 'cartpole_sarsa_test_hyperopt'
 version = '1.1'
 results_dir = '../results/'
 
@@ -15,7 +15,8 @@ data_dir = '../data/'
 save_interval = 1*60
 
 #run for a total number of episodes
-train_episodes=10000
+train_episodes=20000
+max_steps=1000
 
 use_float32=True
 
@@ -56,19 +57,19 @@ positive_reward = 0.1
 no_reward = 0.0
 
 #decay_type can be 'geometric' or 'linear'
-decay_type='linear'
-epsilon=0.035
-epsilon_min=0.03
-#epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
-epsilon_decay = (epsilon - epsilon_min)/10000
+decay_type='geometric'
+epsilon=0.05
+epsilon_min=0.007
+epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
+#epsilon_decay = (epsilon - epsilon_min)/10000
 gamma=0.99
-alpha=0.4
+learning_rate=0.4
 
-#action_type='e_greedy'
+action_type='e_greedy'
 
-action_type='noisy_qsa'
-qsa_avg_alpha = 0.99
-qsa_avg_init  = 0.0
+#action_type='noisy_qsa'
+#qsa_avg_alpha = 0.99
+#qsa_avg_init  = 0.0
 
 #If defined, will print the state variables on every frame
 print_state_debug=True

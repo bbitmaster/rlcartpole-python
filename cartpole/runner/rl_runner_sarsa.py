@@ -1,13 +1,14 @@
 #!/usr/bin/env python
+import time
+import math
+import sys
 import numpy as np
 from cartpole.sim.cartpole_sim import cartpole_sim
 from cartpole.state.tabular_qsa import tabular_qsa
 from cartpole.state.nnet_qsa import nnet_qsa
 from cartpole.env.cartpole_environment import cartpole_environment
 from cartpole.misc.clear import clear
-import time
-import math
-import h5py
+from cartpole.misc.save_h5py import save_results,load_results
 
 class rl_runner_sarsa(object):
     def run_sim(self,p):
@@ -53,6 +54,11 @@ class rl_runner_sarsa(object):
 
         ##repeat for each episode
         self.r_sum_avg = -0.95
+        self.r_sum_avg_list = []
+        self.steps_balancing_pole_list = []
+        self.steps_balancing_pole_avg = 0.00
+        self.steps_balancing_pole_avg_list = []
+
         while 1:
             self.step = 0 
             ##initialize s
@@ -61,6 +67,7 @@ class rl_runner_sarsa(object):
             #choose a from s using policy derived from Q
             (self.a,self.qsa_tmp) = self.choose_action(self.s,p);
 
+            r_list = []
             self.r_sum = 0.0
             #repeat steps
             quit = False
@@ -76,6 +83,7 @@ class rl_runner_sarsa(object):
                 self.r = self.sim.get_reward()
                 self.s_prime = self.sim.get_state()
                 self.r_sum += self.r
+                r_list.append(self.r)
 
                 #choose a' from s' using policy derived from Q
                 (self.a_prime,self.qsa_prime) = self.choose_action(self.s_prime,p)
@@ -116,16 +124,28 @@ class rl_runner_sarsa(object):
                     print("Simname: " + str(p['simname']))
                     print("Episodes Elapsed: " + str(self.episode))
                     print("Average Reward Per Episode: " + str(self.r_sum_avg))
+                    print("Average Number of Steps Spent Balancing Pole: " + str(self.steps_balancing_pole_avg))
+                    print("Max Number of Steps Spent Balancing Pole: " + str(np.max(np.array(self.steps_balancing_pole_avg_list))))
                     print("Epsilon: " + str(self.epsilon))
+                    print("Epsilon Min: " + str(p['epsilon_min']))
+                    print("Alpha (learning rate): " + str(self.alpha*p['learning_rate']))
+                    if(p.has_key('learning_rate_decay')):
+                        print("Alpha (learning rate) decay: " + str(p['learning_rate_decay']))
+                    if(p['qsa_type'] == 'nnet'):
+                        print("Activation function: " + str(p['activation_function']))
+                        print("num_hidden: " + str(p['num_hidden']))
                     if(p['action_type'] == 'noisy_qsa'):
                         print("Average QSA Standard Deviation: " + str(self.qsa_std_avg))
                         print("Probability of taking different action: " + str(self.prob_of_different_action))
                     print("Average Steps Per Second: " + str(1.0/avg_step_duration))
+                    print("Action Type: " + str(p['action_type']))
                     print("a_list: " + str(self.tmp_a_list))
                     m, s = divmod(time.time() - start_time, 60)
                     h, m = divmod(m, 60)
                     print "Elapsed Time %d:%02d:%02d" % (h, m, s)
+                    sys.stdout.flush()
                     print_update_timer = time.time()
+
 
                 if(self.episode >= p['train_episodes']):
                     save_and_exit = True
@@ -135,7 +155,7 @@ class rl_runner_sarsa(object):
                     break
                 if(self.sim.is_terminal):
                     break
-                if(self.step > 3000):
+                if(self.step > p['max_steps']):
                     break
                 ## s <- s';  a <-- a'
                 self.s = self.s_prime
@@ -146,6 +166,14 @@ class rl_runner_sarsa(object):
                 avg_step_duration = 0.995*avg_step_duration + (1.0 - 0.995)*(time.time() - step_duration_timer)
                 step_duration_timer = time.time()
                 #end step loop
+
+            #compute the number of steps that have a positive reward, as the number of steps that balanced
+            self.steps_balancing_pole = np.sum(np.array(r_list) > 0.0000001)
+            self.steps_balancing_pole_list.append(self.steps_balancing_pole)
+
+            self.steps_balancing_pole_avg = 0.995*self.steps_balancing_pole_avg + (1.0 - 0.995)*self.steps_balancing_pole
+            self.steps_balancing_pole_avg_list.append(self.steps_balancing_pole_avg)
+
             self.r_sum_avg = 0.995*self.r_sum_avg + (1.0 - 0.995)*self.r_sum
             
             if(p['decay_type'] == 'geometric'):
@@ -154,6 +182,15 @@ class rl_runner_sarsa(object):
             elif(p['decay_type'] == 'linear'):
                 self.epsilon = self.epsilon - p['epsilon_decay']
                 self.epsilon = max(p['epsilon_min'],self.epsilon)
+            
+
+            if(p.has_key('learning_rate_decay_type') and p['learning_rate_decay_type'] == 'geometric'):
+                self.alpha = self.alpha * p['learning_rate_decay']
+                self.alpha = max(p['learning_rate_min']/p['learning_rate'],self.alpha)
+            elif(p.has_key('learning_rate_decay_type') and p['learning_rate_decay_type'] == 'linear'):
+                self.alpha = self.alpha - p['learning_rate_decay']
+                self.alpha = max(p['learning_rate_min']/p['learning_rate'],self.alpha)
+
 
             #save stuff (TODO: Put this in a save function)
             if(time.time() - save_time > save_interval or save_and_exit == True):
@@ -165,7 +202,9 @@ class rl_runner_sarsa(object):
                 break;
             self.episode += 1
             #end episode loop
-        return
+
+        self.update_results(p)
+        return self.results
 
     def choose_action(self,state,p):
         max_action = -1e99
@@ -196,54 +235,58 @@ class rl_runner_sarsa(object):
         self.tmp_a_list = np.copy(np.array(qsa_list))
         return (a,qsa_list[a])
 
-    def save_results(self,filename,p):
-        f_handle = h5py.File(filename,'w')
+    #this updates the internal self.results variable to reflect the latests results to be either saved or returned
+    def update_results(self,p):
+        self.results = {}
         #TODO: save neural network weights
         if(p['qsa_type'] == 'tabular'):
-            f_handle['qsa_values'] = np.array(self.qsa.data);
-            f_handle['state_size'] = np.array(self.state_size);
-        f_handle['state_min'] = np.array(self.state_min);
-        f_handle['state_max'] = np.array(self.state_max);
-        f_handle['num_actions'] = np.array(self.num_actions);
-        f_handle['epsilon'] = np.array(self.epsilon)
-        f_handle['epsilon_decay'] = np.array(self.epsilon_decay)
-        f_handle['epsilon_min'] = np.array(self.epsilon_min)
-        f_handle['alpha'] = np.array(self.alpha)
-        f_handle['gamma'] = np.array(self.gamma)
-        f_handle['episode'] = np.array(self.episode)
+            self.results['qsa_values'] = np.array(self.qsa.data);
+            self.results['state_size'] = np.array(self.state_size);
+        self.results['steps_balancing_pole_list'] = np.array(self.steps_balancing_pole_list)
+        self.results['steps_balancing_pole_avg_list'] = np.array(self.steps_balancing_pole_avg_list)
+        self.results['state_min'] = np.array(self.state_min);
+        self.results['state_max'] = np.array(self.state_max);
+        self.results['num_actions'] = np.array(self.num_actions);
+        self.results['epsilon'] = np.array(self.epsilon)
+        self.results['epsilon_decay'] = np.array(self.epsilon_decay)
+        self.results['epsilon_min'] = np.array(self.epsilon_min)
+        self.results['alpha'] = np.array(self.alpha)
+        self.results['gamma'] = np.array(self.gamma)
+        self.results['episode'] = np.array(self.episode)
+        self.results['parameters'] = p
         #TODO: save and load more hyperparameters, such as cart-pole dynamics, bounds, positive and negative reward values, and others?
 
-        #iterate through all parameters and save them in the parameters group
-        p_group = f_handle.create_group('parameters');
-        for param in p.iteritems():
-            #only save the ones that have a data type that is supported
-            if(type(param[1]) in (int,float,str)):
-                p_group[param[0]] = param[1];
-        f_handle.close();
+    def save_results(self,filename,p):
+        self.update_results(p)
+        #skip saving if the parameter says not to save
+        if(p.has_key('skip_saving') and p['skip_saving'] == True):
+            return
+        save_results(filename,self.results)
 
-    def load_sim(self,p):
-        f_handle = h5py.File(p['load_name'],'r')
-        self.epsilon = f_handle['epsilon'].value
-        self.epsilon_decay = f_handle['epsilon_decay'].value
-        self.epsilon_min = f_handle['epsilon_min'].value
-        self.alpha = f_handle['alpha'].value
-        self.gamma = f_handle['gamma'].value
-        self.state_min = list(f_handle['state_min'])
-        self.state_max = list(f_handle['state_max'])
-        self.state_size = list(f_handle['state_size'])
-        self.episode = f_handle['episode'].value
+
+#todo: rework this, to support neural network architecture
+    def load_results(self,filename,p):
+        self.results = load_h5py(filename,p)
+
+        self.epsilon = self.results['epsilon'].value
+        self.epsilon_decay = self.results['epsilon_decay'].value
+        self.epsilon_min = self.results['epsilon_min'].value
+        self.alpha = self.results['alpha'].value
+        self.gamma = self.results['gamma'].value
+        self.state_min = list(self.results['state_min'])
+        self.state_max = list(self.results['state_max'])
+        self.state_size = list(self.results['state_size'])
+        self.episode = self.results['episode'].value
         self.num_actions = 3
         self.qsa = tabular_qsa()
         self.qsa.init(self.state_min,self.state_max,self.state_size,self.num_actions)
-        self.qsa.data = np.array(f_handle['qsa_values'])
+        self.qsa.data = np.array(self.results['qsa_values'])
         print('loaded epsilon: ' + str(self.epsilon))
-        f_handle.close();
 
     def init_sim(self,p):
         self.epsilon = p['epsilon']
         self.epsilon_decay = p.get('epsilon_decay',1.0)
         self.epsilon_min = p.get('epsilon_min',self.epsilon)
-        self.alpha = p['alpha']
         self.gamma = p['gamma']
 
         ##initialize Qsa arbitrarily
@@ -260,9 +303,12 @@ class rl_runner_sarsa(object):
             self.qsa = tabular_qsa()
             self.state_size = [p['angle_bins'],p['angle_vel_bins'],p['pos_bins'],p['vel_bins']]
             self.qsa.init(self.state_min,self.state_max,self.state_size,self.num_actions)
+            self.alpha = p['learning_rate']
         elif(p['qsa_type'] == 'nnet'):
             self.qsa = nnet_qsa()
             self.qsa.init(self.state_min,self.state_max,self.num_actions,p)
+            #The neural network has its own internal learning rate
+            self.alpha = 1.0
 
 if __name__ == '__main__':
     g = rl_runner_sarsa()

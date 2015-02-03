@@ -17,6 +17,8 @@ save_interval = 1*60
 #run for a total number of episodes
 train_episodes=15000
 
+max_steps=500
+
 use_float32=True
 
 random_seed = 4;
