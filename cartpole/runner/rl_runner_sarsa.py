@@ -6,6 +6,7 @@ import numpy as np
 from cartpole.sim.cartpole_sim import cartpole_sim
 from cartpole.state.tabular_qsa import tabular_qsa
 from cartpole.state.nnet_qsa import nnet_qsa
+from cartpole.state.cartpole_nnet_qsa import cartpole_nnet_qsa
 from cartpole.env.cartpole_environment import cartpole_environment
 from cartpole.misc.clear import clear
 from cartpole.misc.save_h5py import save_results,load_results
@@ -263,8 +264,8 @@ class rl_runner_sarsa(object):
             return
         save_results(filename,self.results)
 
-
-#todo: rework this, to support neural network architecture
+#TODO: THIS FUNCTION IS BROKEN! LOADING MAY NOT WORK PROPERLY!
+#      rework this, to support neural network architecture
     def load_results(self,filename,p):
         self.results = load_h5py(filename,p)
 
@@ -307,8 +308,14 @@ class rl_runner_sarsa(object):
         elif(p['qsa_type'] == 'nnet'):
             self.qsa = nnet_qsa()
             self.qsa.init(self.state_min,self.state_max,self.num_actions,p)
-            #The neural network has its own internal learning rate
+            #The neural network has its own internal learning rate (alpha is ignored)
             self.alpha = 1.0
+        elif(p['qsa_type'] == 'cartpole_nnet'):
+            self.qsa = cartpole_nnet_qsa()
+            self.qsa.init(self.state_min,self.state_max,self.num_actions,p)
+            #The neural network has its own internal learning rate (alpha is ignored)
+            self.alpha = 1.0
+
 
 if __name__ == '__main__':
     g = rl_runner_sarsa()

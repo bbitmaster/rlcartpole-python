@@ -27,10 +27,12 @@ class nnet_qsa(object):
 
     def store(self,state,action,value):
         s = (np.array(state) - self.mins)/(self.maxs - self.mins)
-        s = s*1.50
+        s = s-0.5
+        s = s*2.25
         action_list = np.ones((1,self.num_actions))*self.incorrect_target
         action_list[0,action] = self.correct_target
         s = np.append(s,action_list)[:,np.newaxis]
+#        print(str(s))
         self.net.input = s
 #        print(str(s))
         self.net.feed_forward()

@@ -158,16 +158,16 @@ class visualize_sdl(object):
             line_pos += height
             text = font.render(("Current Alpha: " + str(stats.alpha)),1,(255,255,255))
             self.screen.blit(text,(30,line_pos))
-        if(stats.fast_forward):
-            line_pos=30
-            font = pygame.font.SysFont("Ubuntu",100)
+            if(stats.fast_forward):
+                line_pos=30
+                font = pygame.font.SysFont("Ubuntu",100)
 
-            text = font.render(("FAST FORWARD"),1,(128,255,255))
-            self.screen.blit(text,(300,300))
+                text = font.render(("FAST FORWARD"),1,(128,255,255))
+                self.screen.blit(text,(300,300))
 
-        if(stats.save_images):
-            pygame.image.save(self.screen,stats.image_save_dir + "frame_" + str(self.framenum) + ".png")
-            self.framenum = self.framenum + 1
+            if(stats.save_images):
+                pygame.image.save(self.screen,stats.image_save_dir + "frame_" + str(self.framenum) + ".png")
+                self.framenum = self.framenum + 1
 
             
         pygame.display.flip()

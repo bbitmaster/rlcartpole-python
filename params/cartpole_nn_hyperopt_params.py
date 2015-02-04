@@ -35,13 +35,13 @@ pos_bound = 10
 qsa_type='nnet'
 
 #parameters for neural network qsa
-activation_function='tanh'
+activation_function='linear_rectifier'
 
-num_hidden=64
-learning_rate = 0.004
+num_hidden=96
+learning_rate = 0.1
 learning_rate_decay_type='geometric'
-learning_rate_decay=0.9999
-learning_rate_min=0.0001
+learning_rate_decay=0.9992
+learning_rate_min=0.00001
 momentum=0.0
 maxnorm=None
 dropout=None
@@ -70,19 +70,20 @@ push_force = 10.0
 
 #reinforcement learning parameters
 negative_reward = -1.0
-positive_reward = 0.1
+positive_reward = 0.01
 no_reward = 0.0
 
 #decay_type can be 'geometric' or 'linear'
-decay_type='linear'
-epsilon=2.0
-epsilon_min=0.1
+decay_type='geometric'
+epsilon=0.15
+epsilon_min=0.001
 #epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
-epsilon_decay = (epsilon - epsilon_min)/15000
+#epsilon_decay = (epsilon - epsilon_min)/15000
+epsilon_decay=0.9999
 gamma=0.99
 
-#action_type='e_greedy'
-action_type='noisy_qsa'
+action_type='e_greedy'
+#action_type='noisy_qsa'
 qsa_avg_alpha = 0.99
 qsa_avg_init  = 0.0
 
