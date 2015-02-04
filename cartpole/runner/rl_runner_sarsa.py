@@ -95,7 +95,6 @@ class rl_runner_sarsa(object):
                 self.qsa.store(self.s,self.a,self.qsa_tmp +  \
                     self.alpha*(self.r + self.gamma*self.qsa.load(self.s_prime,self.a_prime) - self.qsa_tmp))
                 
-                
                 if(self.do_vis):
                     if not (self.episode % self.showevery):
                         self.fast_forward = False
@@ -138,6 +137,8 @@ class rl_runner_sarsa(object):
                     if(p['action_type'] == 'noisy_qsa'):
                         print("Average QSA Standard Deviation: " + str(self.qsa_std_avg))
                         print("Probability of taking different action: " + str(self.prob_of_different_action))
+                    elif(p['qsa_type'] == 'cartpole_nnet'):
+                        print("state given to nnet:\n" + str(np.array(self.qsa.net.input).transpose()))
                     print("Average Steps Per Second: " + str(1.0/avg_step_duration))
                     print("Action Type: " + str(p['action_type']))
                     print("a_list: " + str(self.tmp_a_list))

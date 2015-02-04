@@ -80,7 +80,7 @@ epsilon_min=0.001
 #epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
 #epsilon_decay = (epsilon - epsilon_min)/15000
 epsilon_decay=0.9999
-gamma=0.99
+gamma=0.97
 
 action_type='e_greedy'
 #action_type='noisy_qsa'
