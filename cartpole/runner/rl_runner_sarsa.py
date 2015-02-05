@@ -6,6 +6,7 @@ import numpy as np
 from cartpole.sim.cartpole_sim import cartpole_sim
 from cartpole.state.tabular_qsa import tabular_qsa
 from cartpole.state.nnet_qsa import nnet_qsa
+from cartpole.state.cluster_nnet_qsa import cluster_nnet_qsa
 from cartpole.state.cartpole_nnet_qsa import cartpole_nnet_qsa
 from cartpole.env.cartpole_environment import cartpole_environment
 from cartpole.misc.clear import clear
@@ -119,7 +120,8 @@ class rl_runner_sarsa(object):
                     #    print("Qs2: " + str(self.qsa.load(s,2)))
 
                 #TODO: put this printout stuff in a function
-                if(print_update_timer < time.time() - 1.0):
+                #the self.episode > 0 check prevents a bug where some of the printouts are empty arrays before the first episode completes
+                if(print_update_timer < time.time() - 1.0 and self.episode > 0):
                     clear()
                     print("Simname: " + str(p['simname']))
                     print("Episodes Elapsed: " + str(self.episode))
@@ -313,6 +315,11 @@ class rl_runner_sarsa(object):
             self.alpha = 1.0
         elif(p['qsa_type'] == 'cartpole_nnet'):
             self.qsa = cartpole_nnet_qsa()
+            self.qsa.init(self.state_min,self.state_max,self.num_actions,p)
+            #The neural network has its own internal learning rate (alpha is ignored)
+            self.alpha = 1.0
+        elif(p['qsa_type'] == 'cluster_nnet'):
+            self.qsa = cluster_nnet_qsa()
             self.qsa.init(self.state_min,self.state_max,self.num_actions,p)
             #The neural network has its own internal learning rate (alpha is ignored)
             self.alpha = 1.0
