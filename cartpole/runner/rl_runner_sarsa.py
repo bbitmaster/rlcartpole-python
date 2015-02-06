@@ -93,6 +93,8 @@ class rl_runner_sarsa(object):
                 #Q(s,a) <- Q(s,a) + alpha[r + gamma*Q(s_prime,a_prime) - Q(s,a)]
                 #todo: qsa_prime can be saved and reused for qsa_tmp
                 #qsa_tmp = self.qsa.load(self.s,self.a)
+                #self.qsa.update(self.s,self.a,self.r,self.s_prime,self.a_prime,self.qsa_tmp)
+
                 self.qsa.store(self.s,self.a,self.qsa_tmp +  \
                     self.alpha*(self.r + self.gamma*self.qsa.load(self.s_prime,self.a_prime) - self.qsa_tmp))
                 
@@ -166,6 +168,7 @@ class rl_runner_sarsa(object):
                 self.a = self.a_prime
                 self.qsa_tmp = self.qsa_prime
 
+                #print("Next Step \n")
                 self.step += 1
                 avg_step_duration = 0.995*avg_step_duration + (1.0 - 0.995)*(time.time() - step_duration_timer)
                 step_duration_timer = time.time()
@@ -218,8 +221,10 @@ class rl_runner_sarsa(object):
             qsa_list = [self.qsa.load(state,i) for i in range(self.num_actions)]
             if(np.random.random() < self.epsilon):
                 a = np.random.randint(self.num_actions)
+                #print("selected action " + str(a) + "which had QSA value of: " + str(qsa_list[a]))
             else:
                 a = np.argmax(np.array(qsa_list))
+                #print("selected random action " + str(a) + "which had QSA value of: " + str(qsa_list[a]))
         elif(p['action_type'] == 'noisy_qsa'):
             #INIT CODE HERE
             if(self.step == 0 and self.episode == 0):

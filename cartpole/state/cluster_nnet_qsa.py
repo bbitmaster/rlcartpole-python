@@ -53,13 +53,15 @@ class cluster_nnet_qsa(object):
         s = np.append(s,action_list)[:,np.newaxis]
         self.net.input = s
         self.net.feed_forward()
+        #print("This should be 0: " + str(self.net.output - value_tmp) + " netoutput - value: " + str(self.net.output - value))
         self.net.error = self.net.output - value
         self.net.back_propagate()
         self.net.update_weights()
 
     def load(self,state,action):
         s = (np.array(state) - self.mins)/(self.maxs - self.mins)
-        s = s*1.50
+        s = s-0.5
+        s = s*2.25
         action_list = np.ones((1,self.num_actions))*self.incorrect_target
         action_list[0,action] = self.correct_target
         s = np.append(s,action_list)[:,np.newaxis]

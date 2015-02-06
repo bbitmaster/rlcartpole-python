@@ -38,7 +38,7 @@ qsa_type='cluster_nnet'
 activation_function='linear'
 
 num_hidden=512
-learning_rate = 0.1
+learning_rate = 0.01
 learning_rate_decay_type='geometric'
 learning_rate_decay=1.0
 learning_rate_min=0.00001
@@ -80,11 +80,11 @@ no_reward = 0.0
 
 #decay_type can be 'geometric' or 'linear'
 decay_type='geometric'
-epsilon=0.5
+epsilon=0.05
 epsilon_min=0.005
 #epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
 #epsilon_decay = (epsilon - epsilon_min)/15000
-epsilon_decay=0.999
+epsilon_decay=0.9992
 gamma=0.99
 
 action_type='e_greedy'

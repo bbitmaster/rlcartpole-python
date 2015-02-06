@@ -10,7 +10,7 @@ class nnet_qsa(object):
         self.mins = np.array(mins)
         self.maxs = np.array(maxs)
         self.incorrect_target = p['incorrect_target']
-        print(str(self.state_size) + " " + str(self.num_actions))
+        #print(str(self.state_size) + " " + str(self.num_actions))
         self.correct_target = p['correct_target']
         layers.append(nnet.layer(self.state_size + self.num_actions))
         layers.append(nnet.layer(p['num_hidden'],p['activation_function'],
@@ -42,7 +42,8 @@ class nnet_qsa(object):
 
     def load(self,state,action):
         s = (np.array(state) - self.mins)/(self.maxs - self.mins)
-        s = s*1.50
+        s = s-0.5
+        s = s*2.25
         action_list = np.ones((1,self.num_actions))*self.incorrect_target
         action_list[0,action] = self.correct_target
         s = np.append(s,action_list)[:,np.newaxis]
