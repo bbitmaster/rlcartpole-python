@@ -135,13 +135,16 @@ class rl_runner_sarsa(object):
                     print("Alpha (learning rate): " + str(self.alpha*p['learning_rate']))
                     if(p.has_key('learning_rate_decay')):
                         print("Alpha (learning rate) decay: " + str(p['learning_rate_decay']))
+                    if(p['qsa_type'] == 'cluster_nnet'):
+                        print("num_hidden: " + str(p['num_hidden']))
+                        print('num_selected: ' + str(self.qsa.net.layer[0].num_selected))
                     if(p['qsa_type'] == 'nnet'):
                         print("Activation function: " + str(p['activation_function']))
                         print("num_hidden: " + str(p['num_hidden']))
                     if(p['action_type'] == 'noisy_qsa'):
                         print("Average QSA Standard Deviation: " + str(self.qsa_std_avg))
                         print("Probability of taking different action: " + str(self.prob_of_different_action))
-                    elif(p['qsa_type'] == 'cartpole_nnet'):
+                    if(p['qsa_type'] == 'cartpole_nnet'):
                         print("state given to nnet:\n" + str(np.array(self.qsa.net.input).transpose()))
                     print("Average Steps Per Second: " + str(1.0/avg_step_duration))
                     print("Action Type: " + str(p['action_type']))
@@ -211,6 +214,9 @@ class rl_runner_sarsa(object):
             #end episode loop
 
         self.update_results(p)
+        obj = np.max(self.results['steps_balancing_pole_avg_list'])
+        argmax = np.argmax(self.results['steps_balancing_pole_avg_list'])
+        print("obj: " + str(obj) + " argmax: " + str(argmax))
         return self.results
 
     def choose_action(self,state,p):

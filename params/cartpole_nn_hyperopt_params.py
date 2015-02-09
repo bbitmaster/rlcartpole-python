@@ -12,7 +12,7 @@ results_dir = '../results/'
 #load_name = '../results/cartpole_sarsa_test1.1.h5py'
 
 data_dir = '../data/'
-save_interval = 1*60
+save_interval = 20*60
 
 #run for a total number of episodes
 train_episodes=20000

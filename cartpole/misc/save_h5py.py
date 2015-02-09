@@ -20,7 +20,11 @@ def save_results(filename,results):
 
 def load_results(filename):
     results = {}
-    f_handle = h5.File(filename,'r')
+    try:
+        f_handle = h5.File(filename,'r')
+    except IOError:
+        print("Error Opening: " + str(filename))
+        raise IOError
     for k,v in f_handle.iteritems():
         if(type(v) == h5._hl.dataset.Dataset):
             results[str(k)] = np.array(v)

@@ -4,7 +4,7 @@ runtype='sarsa'
 
 #A handy name for this run. The data file will be given this name as
 #<resultsdir><simname><version>.h5py
-simname = 'cartpole_sarsa_test'
+simname = 'cartpole_sarsa_nn_initaltest3_best'
 version = '1.1'
 results_dir = '../results/'
 
@@ -12,7 +12,7 @@ results_dir = '../results/'
 #load_name = '../results/cartpole_sarsa_test1.1.h5py'
 
 data_dir = '../data/'
-save_interval = 30*60
+save_interval = 1*60
 
 #run for a total number of episodes
 train_episodes=20000
@@ -32,16 +32,16 @@ angle_vel_bound = 15;
 pos_bound = 10
 
 #storage types are 'tabular' and 'nnet'
-qsa_type='cluster_nnet'
+qsa_type='cartpole_nnet'
 
 #parameters for neural network qsa
-activation_function='linear'
+activation_function='linear_rectifier'
 
-num_hidden=512
+num_hidden=16
 learning_rate = 0.01
 learning_rate_decay_type='geometric'
-learning_rate_decay=1.0
-learning_rate_min=0.00001
+learning_rate_decay=0.9996
+learning_rate_min=0.0001
 momentum=0.0
 maxnorm=None
 dropout=None
@@ -51,11 +51,6 @@ initialization_scheme_final='glorot'
 
 initialization_constant=1.0
 initialization_constant_final=1.0
-
-#cluster_func stuff
-cluster_func = 'cluster_func'
-clusters_selected=8
-cluster_speed=0.0
 
 #action is encoded using one hot encoding with these as the "hot" and "not hot" targets
 incorrect_target = -1.0
@@ -75,17 +70,17 @@ push_force = 10.0
 
 #reinforcement learning parameters
 negative_reward = -1.0
-positive_reward = 0.01
+positive_reward = 0.05
 no_reward = 0.0
 
 #decay_type can be 'geometric' or 'linear'
 decay_type='geometric'
 epsilon=0.05
-epsilon_min=0.005
+epsilon_min=0.01
 #epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
 #epsilon_decay = (epsilon - epsilon_min)/15000
-epsilon_decay=0.9997
-gamma=0.99
+epsilon_decay=0.9999
+gamma=0.97
 
 action_type='e_greedy'
 #action_type='noisy_qsa'
