@@ -206,8 +206,9 @@ class rl_runner_sarsa(object):
             m, s = divmod(time.time() - self.start_time, 60)
             h, m = divmod(m, 60)
             sys.stdout.write(("ep: %d" % self.episode) + (" epsilon: %2.4f" %self.epsilon) + (" avg steps balanced: %2.4f" % self.steps_balancing_pole_avg) + (" max steps balanced: %2.4f" % np.max(np.array(self.steps_balancing_pole_avg_list))) + (" total_steps: %d" % self.step) + (" steps/sec: %2.4f" % (1.0/self.avg_step_duration)))
-            if(p.has_key('zeta_decay')):
+            if(p.has_key('zeta_decay') and p['zeta_decay'] is not None):
                 sys.stdout.write(" zeta: %2.4f" % self.qsa.net.layer[0].zeta)
+            sys.stdout.write(" l_rate: %2.4f" % (self.alpha*p['learning_rate']))
             print(" Time %d:%02d:%02d" % (h, m, s))
 
             #save stuff (TODO: Put this in a save function)
