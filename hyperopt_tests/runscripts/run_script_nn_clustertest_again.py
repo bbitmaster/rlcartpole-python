@@ -6,8 +6,6 @@ from hyperopt import fmin, tpe, hp, mix, rand, STATUS_OK, STATUS_FAIL
 from functools import partial
 import hyperopt
 from hyperopt.mongoexp import MongoTrials
-import launch
-import evaluate_forget
 import hyperopt_tests.support.launch_cartpole
 
 
@@ -44,8 +42,6 @@ def objective(space):
     from hyperopt import STATUS_OK, STATUS_FAIL
     import random
     import sys
-    import launch
-    import evaluate_forget
     import math
     import os
     from hyperopt_tests.support.launch_cartpole import launch_cartpole

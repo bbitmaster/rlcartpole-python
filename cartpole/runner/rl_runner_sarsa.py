@@ -16,6 +16,16 @@ from cartpole.misc.save_h5py import save_results,load_results
 
 class rl_runner_sarsa(object):
     def run_sim(self,p):
+
+        print("Parameters: ")
+        for k,v in p.items():
+            if(k[0:2] == '__'):
+                continue
+            print(str(k) + " : " + str(v))
+        del k
+        del v
+
+
         #init random number generator from seed
         np.random.seed(p['random_seed']);
    
