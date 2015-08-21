@@ -26,7 +26,7 @@ def cluster_select_func(self):
     else:
         self.distances = np.sum(self.centroids**2,1)[:,np.newaxis] - 2*np.dot(self.centroids,inp) + \
                 np.sum(inp**2,0)[np.newaxis,:]
-    distances_sorted = np.sort(self.distances,axis=0)
+    distances_sorted = np.partition(self.distances,num_selected,axis=0)
     #print("distances_sorted " + str(distances_sorted[0:10,0]))
     self.selected_neurons = self.distances > distances_sorted[num_selected,:]
     #keep track of this so we can count the number of times a centroid was selected
@@ -51,7 +51,7 @@ def cluster_select_func(self):
 #    print(str(self.output))
 
 def cluster_update_func(self):
-    alpha = self.centroid_speed    
+    alpha = self.centroid_speed*self.zeta 
     self.centroids = self.centroids + alpha*(self.centroids_prime - self.centroids)
     
     #keep a count of the number of times a centroid was selected
@@ -72,7 +72,7 @@ def cluster_select_func_starvation1(self):
                   np.sum(self.input**2,0)[np.newaxis,:]
     #scale by starvation trace
     self.distances = self.distances*self.starvation
-    distances_sorted = np.sort(self.distances,axis=0)
+    distances_sorted = np.partition(self.distances,num_selected,axis=0)
     self.selected_neurons = self.distances > distances_sorted[num_selected,:]
     self.saved_selected_neurons = np.copy(self.selected_neurons)
      

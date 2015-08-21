@@ -8,6 +8,8 @@ from cartpole.state.tabular_qsa import tabular_qsa
 from cartpole.state.nnet_qsa import nnet_qsa
 from cartpole.state.cluster_nnet_qsa import cluster_nnet_qsa
 from cartpole.state.cartpole_nnet_qsa import cartpole_nnet_qsa
+from cartpole.state.recurrent_cartpole_nnet_qsa import recurrent_cartpole_nnet_qsa
+from cartpole.state.cartpole_state_transformer import cartpole_state_transformer
 from cartpole.env.cartpole_environment import cartpole_environment
 from cartpole.misc.clear import clear
 from cartpole.misc.save_h5py import save_results,load_results
@@ -30,16 +32,22 @@ class rl_runner_sarsa(object):
         self.pos_bound = p['pos_bound']
         self.angle_vel_bound = p['angle_vel_bound']
         self.sim.init(self.vel_bound,self.angle_vel_bound,self.pos_bound,
-            p['g'],p['l'],p['mp'],p['mc'],p['dt'],p['negative_reward'],p['positive_reward'],p['no_reward'])
+            p['g'],p['l'],p['mp'],p['mc'],p['dt'],p['negative_reward'],p['positive_reward'],p['no_reward'],p.get('create_pomdp',False))
 
         self.do_vis = p['do_vis']
         self.save_images = p.get('save_images',False)
         self.image_save_dir = p.get('image_save_dir',None)
         save_interval = p['save_interval']
+        self.do_running_printout = p.get('do_running_printout',False)
 
         self.showevery = p['showevery']
         self.fastforwardskip = 5
         push_force = p['push_force']
+
+
+        self.do_recurrence = False
+        if(p['do_recurrence']):
+            self.do_recurrence = True
 
         if(self.do_vis):
             #only import if we need it, since we don't want to require installation of pygame
@@ -48,11 +56,11 @@ class rl_runner_sarsa(object):
             v.init_vis(p['display_width'],p['display_height'],p['axis_x_min'],p['axis_x_max'],p['axis_y_min'],p['axis_y_max'],p['fps'])
 
         print_update_timer = time.time()
-        start_time = time.time()
+        self.start_time = time.time()
         elapsed_time = time.time()
         step_duration_timer = time.time()
         save_time = time.time()
-        avg_step_duration = 1.0
+        self.avg_step_duration = 1.0
 
         ##repeat for each episode
         self.r_sum_avg = -0.95
@@ -62,12 +70,24 @@ class rl_runner_sarsa(object):
         self.steps_balancing_pole_avg_list = []
 
         while 1:
+            #reset eligibility at the beginning of each episode
+            #TODO: This should be abstracted into a function call
+            if(hasattr(self.qsa,'_lambda')):
+                for l in self.qsa.net.layer:
+                    l.eligibility = np.zeros(l.eligibility.shape,dtype=np.float32)
+
             self.step = 0 
             ##initialize s
             self.sim.reset_state()
-            self.s = self.sim.get_state()
-            #choose a from s using policy derived from Q
-            (self.a,self.qsa_tmp) = self.choose_action(self.s,p);
+            self.s = self.state_transformer.transform(self.sim.get_state())
+
+            if(self.do_recurrence):
+                #choose a from s using policy derived from Q
+                self.h = np.zeros(p['num_hidden'],dtype=np.float32)
+                (self.a,self.qsa_tmp,self.h_prime) = self.choose_action_recurrence(np.append(self.s,self.h),p);
+            else:
+                #choose a from s using policy derived from Q
+                (self.a,self.qsa_tmp) = self.choose_action(self.s,p);
 
             r_list = []
             self.r_sum = 0.0
@@ -83,19 +103,27 @@ class rl_runner_sarsa(object):
                 self.sim.step()
                 #print("Terminal: " + str(self.sim.is_terminal))
                 self.r = self.sim.get_reward()
-                self.s_prime = self.sim.get_state()
+                self.s_prime = self.state_transformer.transform(self.sim.get_state())
                 self.r_sum += self.r
                 r_list.append(self.r)
 
-                #choose a' from s' using policy derived from Q
-                (self.a_prime,self.qsa_prime) = self.choose_action(self.s_prime,p)
-                
-                #Q(s,a) <- Q(s,a) + alpha[r + gamma*Q(s_prime,a_prime) - Q(s,a)]
-                #todo: qsa_prime can be saved and reused for qsa_tmp
-                #qsa_tmp = self.qsa.load(self.s,self.a)
-                #self.qsa.update(self.s,self.a,self.r,self.s_prime,self.a_prime,self.qsa_tmp)
+                if(self.do_recurrence):
+                    (self.a_prime,self.qsa_prime,self.h_primeprime) = \
+                            self.choose_action_recurrence(np.append(self.s_prime,self.h_prime),p)
 
-                self.qsa.store(self.s,self.a,self.qsa_tmp +  \
+                    current_s = np.append(self.s,self.h)
+                    next_s = np.append(self.s_prime,self.h_prime)
+                    self.qsa.store(current_s,self.a,self.qsa_tmp +  \
+                        self.alpha*(self.r + self.gamma*self.qsa.load(next_s,self.a_prime) - self.qsa_tmp))
+                else:
+                    #choose a' from s' using policy derived from Q
+                    (self.a_prime,self.qsa_prime) = self.choose_action(self.s_prime,p)
+                
+                    #Q(s,a) <- Q(s,a) + alpha[r + gamma*Q(s_prime,a_prime) - Q(s,a)]
+                    #todo: qsa_prime can be saved and reused for qsa_tmp
+                    #qsa_tmp = self.qsa.load(self.s,self.a)
+                    #self.qsa.update(self.s,self.a,self.r,self.s_prime,self.a_prime,self.qsa_tmp)
+                    self.qsa.store(self.s,self.a,self.qsa_tmp +  \
                     self.alpha*(self.r + self.gamma*self.qsa.load(self.s_prime,self.a_prime) - self.qsa_tmp))
                 
                 if(self.do_vis):
@@ -123,38 +151,8 @@ class rl_runner_sarsa(object):
 
                 #TODO: put this printout stuff in a function
                 #the self.episode > 0 check prevents a bug where some of the printouts are empty arrays before the first episode completes
-                if(print_update_timer < time.time() - 1.0 and self.episode > 0):
-                    clear()
-                    print("Simname: " + str(p['simname']))
-                    print("Episodes Elapsed: " + str(self.episode))
-                    print("Average Reward Per Episode: " + str(self.r_sum_avg))
-                    print("Average Number of Steps Spent Balancing Pole: " + str(self.steps_balancing_pole_avg))
-                    print("Max Number of Steps Spent Balancing Pole: " + str(np.max(np.array(self.steps_balancing_pole_avg_list))))
-                    print("Epsilon: " + str(self.epsilon))
-                    print("Epsilon Min: " + str(p['epsilon_min']))
-                    print("Alpha (learning rate): " + str(self.alpha*p['learning_rate']))
-                    if(p.has_key('learning_rate_decay')):
-                        print("Alpha (learning rate) decay: " + str(p['learning_rate_decay']))
-                    if(p['qsa_type'] == 'cluster_nnet'):
-                        print("num_hidden: " + str(p['num_hidden']))
-                        print('num_selected: ' + str(self.qsa.net.layer[0].num_selected))
-                    if(p['qsa_type'] == 'nnet'):
-                        print("Activation function: " + str(p['activation_function']))
-                        print("num_hidden: " + str(p['num_hidden']))
-                    if(p['action_type'] == 'noisy_qsa'):
-                        print("Average QSA Standard Deviation: " + str(self.qsa_std_avg))
-                        print("Probability of taking different action: " + str(self.prob_of_different_action))
-                    if(p['qsa_type'] == 'cartpole_nnet'):
-                        print("state given to nnet:\n" + str(np.array(self.qsa.net.input).transpose()))
-                    print("Average Steps Per Second: " + str(1.0/avg_step_duration))
-                    print("Action Type: " + str(p['action_type']))
-                    print("a_list: " + str(self.tmp_a_list))
-                    m, s = divmod(time.time() - start_time, 60)
-                    h, m = divmod(m, 60)
-                    print "Elapsed Time %d:%02d:%02d" % (h, m, s)
-                    sys.stdout.flush()
-                    print_update_timer = time.time()
-
+                if(self.do_running_printout and print_update_timer < time.time() - 1.0 and self.episode > 0):
+                    self.do_running_printout()
 
                 if(self.episode >= p['train_episodes']):
                     save_and_exit = True
@@ -170,10 +168,13 @@ class rl_runner_sarsa(object):
                 self.s = self.s_prime
                 self.a = self.a_prime
                 self.qsa_tmp = self.qsa_prime
+                if(self.do_recurrence):
+                    self.h = self.h_prime
+                    self.h_prime = self.h_primeprime
 
                 #print("Next Step \n")
                 self.step += 1
-                avg_step_duration = 0.995*avg_step_duration + (1.0 - 0.995)*(time.time() - step_duration_timer)
+                self.avg_step_duration = 0.995*self.avg_step_duration + (1.0 - 0.995)*(time.time() - step_duration_timer)
                 step_duration_timer = time.time()
                 #end step loop
 
@@ -201,6 +202,13 @@ class rl_runner_sarsa(object):
                 self.alpha = self.alpha - p['learning_rate_decay']
                 self.alpha = max(p['learning_rate_min']/p['learning_rate'],self.alpha)
 
+            #print debug for episode
+            m, s = divmod(time.time() - self.start_time, 60)
+            h, m = divmod(m, 60)
+            sys.stdout.write(("ep: %d" % self.episode) + (" epsilon: %2.4f" %self.epsilon) + (" avg steps balanced: %2.4f" % self.steps_balancing_pole_avg) + (" max steps balanced: %2.4f" % np.max(np.array(self.steps_balancing_pole_avg_list))) + (" total_steps: %d" % self.step) + (" steps/sec: %2.4f" % (1.0/self.avg_step_duration)))
+            if(p.has_key('zeta_decay')):
+                sys.stdout.write(" zeta: %2.4f" % self.qsa.net.layer[0].zeta)
+            print(" Time %d:%02d:%02d" % (h, m, s))
 
             #save stuff (TODO: Put this in a save function)
             if(time.time() - save_time > save_interval or save_and_exit == True):
@@ -218,6 +226,42 @@ class rl_runner_sarsa(object):
         argmax = np.argmax(self.results['steps_balancing_pole_avg_list'])
         print("obj: " + str(obj) + " argmax: " + str(argmax))
         return self.results
+
+    def do_running_printout(self):
+        clear()
+        print("Simname: " + str(p['simname']))
+        print("Episodes Elapsed: " + str(self.episode))
+        print("Average Reward Per Episode: " + str(self.r_sum_avg))
+        print("Average Number of Steps Spent Balancing Pole: " + str(self.steps_balancing_pole_avg))
+        print("Max Number of Steps Spent Balancing Pole: " + str(np.max(np.array(self.steps_balancing_pole_avg_list))))
+        print("Epsilon: " + str(self.epsilon))
+        print("Epsilon Min: " + str(p['epsilon_min']))
+        print("Alpha (learning rate): " + str(self.alpha*p['learning_rate']))
+        if(p.has_key('learning_rate_decay')):
+            print("Alpha (learning rate) decay: " + str(p['learning_rate_decay']))
+        if(p['qsa_type'] == 'cluster_nnet'):
+            print("num_hidden: " + str(p['num_hidden']))
+            print('num_selected: ' + str(self.qsa.net.layer[0].num_selected))
+        if(p['qsa_type'] == 'nnet'):
+            print("Activation function: " + str(p['activation_function']))
+            print("num_hidden: " + str(p['num_hidden']))
+        if(p['action_type'] == 'noisy_qsa'):
+            print("Average QSA Standard Deviation: " + str(self.qsa_std_avg))
+            print("Probability of taking different action: " + str(self.prob_of_different_action))
+        if(p['qsa_type'] == 'cartpole_nnet'):
+            print("state given to nnet:\n" + str(np.array(self.qsa.net.input).transpose()))
+        print("Average Steps Per Second: " + str(1.0/self.avg_step_duration))
+        print("Action Type: " + str(p['action_type']))
+        print("a_list: " + str(self.tmp_a_list))
+        m, s = divmod(time.time() - self.start_time, 60)
+        h, m = divmod(m, 60)
+        print "Elapsed Time %d:%02d:%02d" % (h, m, s)
+        sys.stdout.flush()
+        print_update_timer = time.time()
+
+
+
+
 
     def choose_action(self,state,p):
         max_action = -1e99
@@ -249,6 +293,45 @@ class rl_runner_sarsa(object):
 
         self.tmp_a_list = np.copy(np.array(qsa_list))
         return (a,qsa_list[a])
+
+    def choose_action_recurrence(self,state,p):
+        max_action = -1e99
+        
+        #epsilon-greedy
+        if(p['action_type'] == 'e_greedy'):
+            qsa_list = []
+            qsa_list_val = []
+            for i in range(self.num_actions):
+                v = self.qsa.load(state,i)
+                qsa_list.append(np.copy(v))
+                qsa_list_val.append(np.copy(self.qsa.net.layer[0].output[0:-1]))
+
+            if(np.random.random() < self.epsilon):
+                a = np.random.randint(self.num_actions)
+                #print("selected action " + str(a) + "which had QSA value of: " + str(qsa_list[a]))
+            else:
+                a = np.argmax(np.array(qsa_list))
+                #print("selected random action " + str(a) + "which had QSA value of: " + str(qsa_list[a]))
+        elif(p['action_type'] == 'noisy_qsa'):
+            #INIT CODE HERE
+            if(self.step == 0 and self.episode == 0):
+                self.qsa_std_avg = p['qsa_avg_init']
+                self.qsa_avg_alpha = p['qsa_avg_alpha']
+                #this will give a moving average estimate of the probability of selecting a different action
+                #(used for printing only)
+                self.prob_of_different_action = 0.0
+            qsa_list = np.array([self.qsa.load(state,i) for i in range(self.num_actions)])
+            qsa_std = np.std(qsa_list)
+            self.qsa_std_avg = self.qsa_avg_alpha*self.qsa_std_avg + (1.0 - self.qsa_avg_alpha)*qsa_std
+            noise = self.epsilon*self.qsa_std_avg*np.random.rand(self.num_actions)
+            a_before = np.argmax(np.array(qsa_list))
+            a = np.argmax(np.array(qsa_list + noise))
+            self.prob_of_different_action = 0.999*self.prob_of_different_action + (1.0 - 0.999)*(a != a_before)
+
+        self.tmp_a_list = np.copy(np.array(qsa_list))
+        return (a,qsa_list[a],qsa_list_val[a])
+
+
 
     #this updates the internal self.results variable to reflect the latests results to be either saved or returned
     def update_results(self,p):
@@ -332,6 +415,18 @@ class rl_runner_sarsa(object):
         elif(p['qsa_type'] == 'cluster_nnet'):
             self.qsa = cluster_nnet_qsa()
             self.qsa.init(self.state_min,self.state_max,self.num_actions,p)
+            #The neural network has its own internal learning rate (alpha is ignored)
+            self.alpha = 1.0
+        elif(p['qsa_type'] == 'recurrent_cartpole_nnet'):
+
+            self.state_transformer = cartpole_state_transformer()
+            self.state_transformer.init(p.get('do_trig_transform',False),
+                p.get('create_pomdp',False),p.get('state_dupe_count',1),p)
+            print("state dupe count: " + str(p.get('state_dupe_count',1)))
+
+            self.qsa = recurrent_cartpole_nnet_qsa()
+            self.qsa.init(self.state_transformer.num_states,self.num_actions,p)
+            
             #The neural network has its own internal learning rate (alpha is ignored)
             self.alpha = 1.0
 

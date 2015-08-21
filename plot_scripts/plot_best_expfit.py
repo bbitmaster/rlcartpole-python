@@ -68,13 +68,13 @@ if __name__ == '__main__':
     plot_results(res)
     p_err1 = calc_expon_fit(res)
 
-    res_filename = '../results/clustertest/cartpole_hyperopt_nn_clustertest_BZEPXNSLQMIB.h5py'
+    res_filename = '../results/clustertest/cartpole_hyperopt_nn_clustertest_EHWITHFAYCEL.h5py'
     print('loading: ' + res_filename)
     res = load_results(res_filename)
     plot_results(res)
     p_err2 = calc_expon_fit(res)
 
-    res_filename = '../results/clustertest/cartpole_hyperopt_nn_clustertest_CPRWMGWHSGIZ.h5py'
+    res_filename = '../results/clustertest/cartpole_hyperopt_nn_clustertest_BZEPXNSLQMIB.h5py'
     print('loading: ' + res_filename)
     res = load_results(res_filename)
     plot_results(res)
