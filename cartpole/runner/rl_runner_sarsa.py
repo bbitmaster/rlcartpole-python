@@ -220,6 +220,7 @@ class rl_runner_sarsa(object):
                 sys.stdout.write(" zeta: %2.4f" % self.qsa.net.layer[0].zeta)
             sys.stdout.write(" l_rate: %2.4f" % (self.alpha*p['learning_rate']))
             print(" Time %d:%02d:%02d" % (h, m, s))
+            sys.stdout.flush()
 
             #save stuff (TODO: Put this in a save function)
             if(time.time() - save_time > save_interval or save_and_exit == True):
