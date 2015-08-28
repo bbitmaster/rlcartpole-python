@@ -54,6 +54,8 @@ class rl_runner_sarsa(object):
         self.fastforwardskip = 5
         push_force = p['push_force']
 
+        self.use_full_output = p.get('use_full_output',False)
+
 
         self.do_recurrence = False
         if(p['do_recurrence']):
@@ -316,7 +318,10 @@ class rl_runner_sarsa(object):
             for i in range(self.num_actions):
                 v = self.qsa.load(state,i)
                 qsa_list.append(np.copy(v))
-                qsa_list_val.append(np.copy(self.qsa.net.layer[0].output[0:-1]))
+                if(self.use_full_output):
+                    qsa_list_val.append(np.copy(self.qsa.net.layer[0].full_output[0:-1]))
+                else:
+                    qsa_list_val.append(np.copy(self.qsa.net.layer[0].output[0:-1]))
 
             if(np.random.random() < self.epsilon):
                 a = np.random.randint(self.num_actions)
