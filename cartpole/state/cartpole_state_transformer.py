@@ -54,7 +54,7 @@ class cartpole_state_transformer(object):
         elif(self.create_pomdp == 3):
             state = np.array((state[0],state[2],state[3]),dtype=np.float32)
         elif(self.create_pomdp == 4):
-            state = np.array((state[0],math.sin(state[2]),state[3],state[4]),dtype=np.float32)
+            state = np.array((state[0],math.sin(state[1]),state[2],state[3]),dtype=np.float32)
 
         if(self.do_trig_transform):
             state = np.append(np.array([math.sin(state[0]),math.cos(state[0])],dtype=np.float32),state[1:])
