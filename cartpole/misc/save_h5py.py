@@ -16,6 +16,8 @@ def save_results(filename,results):
                 #only save the ones that have a data type that is supported
                 if(type(param[1]) in (bool,int,float,str,np.ndarray)):
                     p_group[param[0]] = param[1];
+                if(param[1] is None):
+                    p_group[param[0]] = 'None';
     f_handle.close();
 
 def load_results(filename):
@@ -36,7 +38,10 @@ def load_results(filename):
             group = dict(v)
             p = {}
             for g_k,g_v in group.iteritems():
-                p[str(g_k)] = g_v.value
+                if(g_v.value == "None"):
+                    p[str(g_k)] = None
+                else:
+                    p[str(g_k)] = g_v.value
             results[str(k)] = p
     f_handle.close();
     return results
@@ -51,6 +56,8 @@ if __name__ == '__main__':
     p['some_parameter1'] = 'blah'
     p['some_parameter2'] = 12
     p['some_parameter3'] = 0.99
+    p['some_parameter4'] = False
+    p['some_parameter5'] = None
     save_data['parameters'] = p
 
     print("save data: " + str(save_data))

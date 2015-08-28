@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.metrics.pairwise import pairwise_distances
 
 def cluster_select_func(self):
     num_selected = self.num_selected
@@ -24,9 +25,16 @@ def cluster_select_func(self):
     elif(hasattr(self,'do_cosinedistance')):
         self.distances = -np.dot(self.centroids,inp)/(np.sqrt(np.sum(self.centroids**2.,1)[:,np.newaxis]*np.sum(inp**2.,0)[np.newaxis,:]))
     else:
-        self.distances = np.sum(self.centroids**2,1)[:,np.newaxis] - 2*np.dot(self.centroids,inp) + \
-                np.sum(inp**2,0)[np.newaxis,:]
+        #print("centroids shape: " + str(self.centroids.shape))
+        #print("inp shape: " + str(inp.shape))
+        #print("centroids dtype: " + str(self.centroids.dtype))
+        #print("inp dtype: " + str(inp.dtype))
+
+        self.distances = pairwise_distances(self.centroids,self.input.T)
+        #self.distances = np.sum(self.centroids**2,1)[:,np.newaxis] - 2*np.dot(self.centroids,inp) + \
+        #        np.sum(inp**2,0)[np.newaxis,:]
     distances_sorted = np.partition(self.distances,num_selected,axis=0)
+    #distances_sorted = np.sort(self.distances,axis=0)
     #print("distances_sorted " + str(distances_sorted[0:10,0]))
     self.selected_neurons = self.distances > distances_sorted[num_selected,:]
     #keep track of this so we can count the number of times a centroid was selected
@@ -39,7 +47,7 @@ def cluster_select_func(self):
         self.eligibility_count = np.ones(self.saved_selected_neurons.shape[0])
     
     self.centroids_prime = (np.dot(inp,(~self.selected_neurons).transpose())/ \
-                      np.sum(~self.selected_neurons,1)).transpose()
+                      np.sum(~self.selected_neurons,1,dtype=np.float32)).transpose()
     self.centroids_prime[np.isnan(self.centroids_prime)] = self.centroids[np.isnan(self.centroids_prime)]
     
     if(hasattr(self,'do_weighted_euclidean')):

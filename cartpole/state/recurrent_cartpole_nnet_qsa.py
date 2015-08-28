@@ -80,7 +80,7 @@ class recurrent_cartpole_nnet_qsa(object):
 
 
     def store(self,state,action,value):
-        action_list = np.ones((self.num_actions))*self.incorrect_target
+        action_list = np.ones((self.num_actions),dtype=np.float32)*self.incorrect_target
         action_list[action] = self.correct_target
         action_list = np.tile(action_list,self.action_dupe_count)
 
@@ -115,7 +115,7 @@ class recurrent_cartpole_nnet_qsa(object):
             self.net.update_weights()
 
     def load(self,state,action):
-        action_list = np.ones((self.num_actions))*self.incorrect_target
+        action_list = np.ones((self.num_actions),dtype=np.float32)*self.incorrect_target
         action_list[action] = self.correct_target
         action_list = np.tile(action_list,self.action_dupe_count)
         s = np.append(state,action_list)
