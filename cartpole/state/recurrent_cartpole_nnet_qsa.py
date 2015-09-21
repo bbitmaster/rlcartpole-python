@@ -101,7 +101,7 @@ class recurrent_cartpole_nnet_qsa(object):
                 self.net.layer[1].zeta = 1.0
                 self.zeta_decay = p['zeta_decay2']
 
-
+        self.do_full_zeta = p.get('do_full_zeta',False)
 
         if(p.has_key('_lambda') and p['_lambda'] is not None):
             self._lambda = p['_lambda']
@@ -148,6 +148,8 @@ class recurrent_cartpole_nnet_qsa(object):
             self.net.layer[0].zeta = self.net.layer[0].zeta*self.zeta_decay
             self.net.layer[0].zeta_matrix[:] = self.net.layer[0].zeta
             self.net.layer[0].step_size = (1.0 - self.net.layer[0].zeta_matrix)*self.learning_rate
+            if(self.do_full_zeta):
+                self.net.layer[1].step_size = (1.0 - self.net.layer[0].zeta)*self.learning_rate
 
             self.net.update_weights()
             #move centroids
@@ -157,7 +159,8 @@ class recurrent_cartpole_nnet_qsa(object):
             self.net.layer[1].zeta = self.net.layer[1].zeta*self.zeta_decay
             self.net.layer[1].zeta_matrix[:] = self.net.layer[1].zeta
             self.net.layer[1].step_size = (1.0 - self.net.layer[1].zeta_matrix)*self.learning_rate
-
+            if(self.do_full_zeta):
+                self.net.layer[0].step_size = (1.0 - self.net.layer[1].zeta)*self.learning_rate
             self.net.update_weights()
             #move centroids
             csf.update_names[self.cluster_func2](self.net.layer[1])
