@@ -15,7 +15,10 @@ class runner_game(object):
         
     def run_sim(self,p):
         sim = cartpole_environment()
-        sim.init(p['vel_bound'],p['angle_vel_bound'],p['pos_bound'],p['g'],p['l'],p['mp'],p['mc'],p['dt'],p['negative_reward'],p['positive_reward'],p['no_reward'])
+        reward_type = p.get('reward_type',0)
+        negative_reward = p['negative_reward']
+        positive_reward = p['positive_reward']
+        sim.init(p['vel_bound'],p['angle_vel_bound'],p['pos_bound'],p['g'],p['l'],p['mp'],p['mc'],p['dt'],p['negative_reward'],p['positive_reward'],p['no_reward'],reward_type)
         v = visualize_sdl()
         v.init_vis(p['display_width'],p['display_height'],p['axis_x_min'],p['axis_x_max'],p['axis_y_min'],p['axis_y_max'],p['fps'])
         push_force = p['push_force']
@@ -66,7 +69,7 @@ class runner_game(object):
             if(sim.is_terminal):
                 sim.reset_state()
 
-            v.draw_cartpole(sim.get_state(),action,sim.get_reward())
+            v.draw_cartpole(sim.get_state(),action,sim.get_reward(reward_type)/positive_reward)
             exit = v.update_vis()
             if(exit):
                 break

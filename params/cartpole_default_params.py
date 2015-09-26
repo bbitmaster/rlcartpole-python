@@ -25,6 +25,8 @@ random_seed = 4;
 save_images=False
 image_save_dir="/home/ben/tmp/" #I Guess that underutilized windows partitition with all that storage is good for something...
 
+incorrect_target = 0.0
+correct_target = 1.0
 
 qsa_type='tabular'
 
@@ -63,7 +65,7 @@ epsilon_min=0.007
 epsilon_decay=exp((log(epsilon_min) - log(epsilon))/10000.0)
 #epsilon_decay = (epsilon - epsilon_min)/10000
 gamma=0.99
-tabular_learning_rate=0.4
+learning_rate=0.4
 
 action_type='e_greedy'
 

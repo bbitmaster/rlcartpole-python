@@ -10,6 +10,7 @@ from cartpole.state.cluster_nnet_qsa import cluster_nnet_qsa
 from cartpole.state.cartpole_nnet_qsa import cartpole_nnet_qsa
 from cartpole.state.recurrent_cartpole_nnet_qsa import recurrent_cartpole_nnet_qsa
 from cartpole.state.cartpole_state_transformer import cartpole_state_transformer
+from cartpole.state.null_transformer import null_transformer
 from cartpole.env.cartpole_environment import cartpole_environment
 from cartpole.misc.clear import clear
 from cartpole.misc.save_h5py import save_results,load_results
@@ -42,7 +43,7 @@ class rl_runner_sarsa(object):
         self.pos_bound = p['pos_bound']
         self.angle_vel_bound = p['angle_vel_bound']
         self.sim.init(self.vel_bound,self.angle_vel_bound,self.pos_bound,
-            p['g'],p['l'],p['mp'],p['mc'],p['dt'],p['negative_reward'],p['positive_reward'],p['no_reward'],p.get('create_pomdp',False))
+            p['g'],p['l'],p['mp'],p['mc'],p['dt'],p['negative_reward'],p['positive_reward'],p['no_reward'],p.get('reward_type',0))
 
         self.do_vis = p['do_vis']
         self.save_images = p.get('save_images',False)
@@ -54,12 +55,12 @@ class rl_runner_sarsa(object):
         self.fastforwardskip = 5
         push_force = p['push_force']
 
+        self.reward_type = p.get('reward_type',0)
+
         self.use_full_output = p.get('use_full_output',False)
 
 
-        self.do_recurrence = False
-        if(p['do_recurrence']):
-            self.do_recurrence = True
+        self.do_recurrence = p.get('do_recurrence',False)
 
         if(self.do_vis):
             #only import if we need it, since we don't want to require installation of pygame
@@ -101,7 +102,7 @@ class rl_runner_sarsa(object):
                 #choose a from s using policy derived from Q
                 (self.a,self.qsa_tmp) = self.choose_action(self.s,p);
 
-            r_list = []
+            balance_list = []
             self.r_sum = 0.0
             #repeat steps
             quit = False
@@ -114,10 +115,12 @@ class rl_runner_sarsa(object):
 
                 self.sim.step()
                 #print("Terminal: " + str(self.sim.is_terminal))
-                self.r = self.sim.get_reward()
+                self.r = self.sim.get_reward(self.reward_type)
                 self.s_prime = self.state_transformer.transform(self.sim.get_state())
                 self.r_sum += self.r
-                r_list.append(self.r)
+                
+                #for consistency, we always label balancing steps with the same reward function
+                balance_list.append(self.sim.get_reward(0))
 
                 if(self.do_recurrence):
                     (self.a_prime,self.qsa_prime,self.h_primeprime) = \
@@ -142,14 +145,14 @@ class rl_runner_sarsa(object):
                     if not (self.episode % self.showevery):
                         self.fast_forward = False
                         v.delay_vis()
-                        v.draw_cartpole(self.sim.get_state(),self.a,self.sim.get_reward(),self)
+                        v.draw_cartpole(self.sim.get_state(),self.a,self.sim.get_reward(self.reward_type),self)
                         exit = v.update_vis()
                         if(exit):
                             quit=True
                     elif(self.step == 0 and not (self.episode % self.fastforwardskip)):
                         self.fast_forward = True
                         v.delay_vis()
-                        v.draw_cartpole(self.sim.get_state(),self.a,self.sim.get_reward(),self)
+                        v.draw_cartpole(self.sim.get_state(),self.a,self.sim.get_reward(self.reward_type),self)
                         exit = v.update_vis()
                         if(exit):
                             quit=True
@@ -191,7 +194,7 @@ class rl_runner_sarsa(object):
                 #end step loop
 
             #compute the number of steps that have a positive reward, as the number of steps that balanced
-            self.steps_balancing_pole = np.sum(np.array(r_list) > 0.0000001)
+            self.steps_balancing_pole = np.sum(np.array(balance_list) > 0.0000001)
             self.steps_balancing_pole_list.append(self.steps_balancing_pole)
 
             self.steps_balancing_pole_avg = 0.995*self.steps_balancing_pole_avg + (1.0 - 0.995)*self.steps_balancing_pole
@@ -218,10 +221,11 @@ class rl_runner_sarsa(object):
             m, s = divmod(time.time() - self.start_time, 60)
             h, m = divmod(m, 60)
             sys.stdout.write(("ep: %d" % self.episode) + (" epsilon: %2.4f" %self.epsilon) + (" avg steps balanced: %2.4f" % self.steps_balancing_pole_avg) + (" max steps balanced: %2.4f" % np.max(np.array(self.steps_balancing_pole_avg_list))) + (" total_steps: %d" % self.step) + (" steps/sec: %2.4f" % (1.0/self.avg_step_duration)))
-            if(hasattr(self.qsa.net.layer[0],'zeta')):
-                sys.stdout.write(" L0 zeta: %2.4f" % self.qsa.net.layer[0].zeta)
-            if(hasattr(self.qsa.net.layer[1],'zeta')):
-                sys.stdout.write(" L1 zeta: %2.4f" % self.qsa.net.layer[1].zeta)
+            if(hasattr(self.qsa,'net')):
+                if(hasattr(self.qsa.net.layer[0],'zeta')):
+                    sys.stdout.write(" L0 zeta: %2.4f" % self.qsa.net.layer[0].zeta)
+                if(hasattr(self.qsa.net.layer[1],'zeta')):
+                    sys.stdout.write(" L1 zeta: %2.4f" % self.qsa.net.layer[1].zeta)
             sys.stdout.write(" l_rate: %2.4f" % (self.alpha*p['learning_rate']))
             print(" Time %d:%02d:%02d" % (h, m, s))
             sys.stdout.flush()
@@ -417,6 +421,7 @@ class rl_runner_sarsa(object):
 
         self.num_actions = 3
         if(p['qsa_type'] == 'tabular'):
+            self.state_transformer = null_transformer()
             self.qsa = tabular_qsa()
             self.state_size = [p['angle_bins'],p['angle_vel_bins'],p['pos_bins'],p['vel_bins']]
             self.qsa.init(self.state_min,self.state_max,self.state_size,self.num_actions)

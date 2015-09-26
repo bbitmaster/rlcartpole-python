@@ -79,10 +79,18 @@ class visualize_sdl(object):
         angle = state[0]
         pos = state[2]
         coords = self.convert_rect_coords((pos - 0.5,-0.5,1.0,1.0))
-        if(reward > 0.001):
-            color = (255,96,96)
-        else:
-            color = (192,24,24)
+        if(reward < 0.0):
+            reward = 0.0
+        r = int(192.0 + ((254.0 - 192.0)*reward))
+        g = int(24.0 + ((96.0 - 24.0)*reward))
+        b = int(24.0 + ((96.0 - 24.0)*reward))
+        color = (r,g,b)
+        print(color)
+
+        #if(reward > 0.001):
+        #    color = (255,96,96)
+        #else:
+        #    color = (192,24,24)
         self.screen.fill(color,pygame.Rect(coords))
         
         #draw pole
