@@ -59,6 +59,11 @@ class rl_runner_sarsa(object):
 
         self.use_full_output = p.get('use_full_output',False)
 
+        self.earlyendepisode = np.zeros(10)
+        self.earlyendreward = np.zeros(10)
+        for i in range(9):
+            self.earlyendepisode[i] = p.get('earlyendepisode' + str(i),0)
+            self.earlyendreward[i] = p.get('earlyendreward' + str(i),0)
 
         self.do_recurrence = p.get('do_recurrence',False)
 
@@ -229,6 +234,11 @@ class rl_runner_sarsa(object):
             sys.stdout.write(" l_rate: %2.4f" % (self.alpha*p['learning_rate']))
             print(" Time %d:%02d:%02d" % (h, m, s))
             sys.stdout.flush()
+
+            for i in range(9):
+                if(self.earlyendepisode[i] > 0 and self.episode == self.earlyendepisode[i] and np.max(np.array(self.steps_balancing_pole_avg_list)) < self.earlyendreward[i]):
+                    print("ending early")
+                    save_and_exit = True
 
             #save stuff (TODO: Put this in a save function)
             if(time.time() - save_time > save_interval or save_and_exit == True):

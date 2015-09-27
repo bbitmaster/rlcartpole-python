@@ -71,6 +71,12 @@ initialization_scheme_final2='glorot'
 initialization_constant2=1.0
 initialization_constant_final2=1.0
 
+earlyendepisode0=5000
+earlyendreward0=30
+
+earlyendepisode1=10000
+earlyendreward1=80
+
 #cluster_func stuff
 cluster_func2 = 'cluster_func'
 clusters_selected2=32
